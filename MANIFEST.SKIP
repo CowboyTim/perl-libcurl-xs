@@ -1,0 +1,13 @@
+^.github/
+^.git/.*
+^MYMETA.*
+^MANIFEST.bak
+^Makefile
+^Makefile.old
+^.gitignore
+\.c$
+\.o$
+\.bs$
+\~$
+blib
+pm_to_blib

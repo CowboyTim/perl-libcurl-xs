@@ -1,0 +1,14 @@
+*~
+.*~
+Makefile
+pm_to_blib
+blib
+.github
+MYMETA.*
+MANIFEST.bak
+Makefile
+Makefile.old
+*.c
+*.o
+*.bs
+*.bs
