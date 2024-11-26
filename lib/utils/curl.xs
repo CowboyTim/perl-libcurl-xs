@@ -386,3 +386,45 @@ void curl_easy_upkeep(SV *http=NULL)
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
+
+void curl_getdate(...)
+    SV *datestr=NULL;
+    PREINIT:
+        time_t t = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        datestr = POPs;
+        if(!datestr || !SvPOK(datestr))
+            XSRETURN_UNDEF;
+        t = curl_getdate(SvPV_nolen(datestr), NULL);
+        if(t == -1)
+            XSRETURN_UNDEF;
+        XSRETURN_UV(t);
+
+void curl_version_info(...)
+    PREINIT:
+        struct curl_version_info_data *vi = NULL;
+        HV *rh = NULL;
+    PPCODE:
+        dTHX;
+        dSP;
+        vi = curl_version_info(CURLVERSION_NOW);
+        if(!vi)
+            XSRETURN_UNDEF;
+        rh = (HV *)sv_2mortal((SV *)newHV());
+        hv_store(rh, "version"       , 7, newSVpv(vi->version       , 0), 0);
+        hv_store(rh, "version_num"   , 11, newSViv(vi->version_num)   , 0);
+        hv_store(rh, "host"          , 4, newSVpv(vi->host          , 0), 0);
+        hv_store(rh, "features"      , 8, newSViv(vi->features      ) , 0);
+        hv_store(rh, "ssl_version"   , 11, newSVpv(vi->ssl_version   , 0), 0);
+        hv_store(rh, "ssl_version_num", 15, newSViv(vi->ssl_version_num), 0);
+        hv_store(rh, "libz_version"  , 12, newSVpv(vi->libz_version  , 0), 0);
+        hv_store(rh, "protocols"     , 9, newSVpv((char *)vi->protocols     , 0), 0);
+        XPUSHs(newRV_inc((SV *)rh));
+
+void curl_version(...)
+    PPCODE:
+        dTHX;
+        dSP;
+        XPUSHs(sv_2mortal(newSVpv(curl_version(), 0)));

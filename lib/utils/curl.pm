@@ -17,10 +17,12 @@ sub AUTOLOAD {
     my (@a_args) = @_;
     my $c_name = $AUTOLOAD;
     $c_name =~ s/.*:://;
-    return unless $c_name =~ m/^(?:CURLOPT)_(.*)$/;
-    return unless length($1//"");
-    my $opt = http::curl_easy_option_by_name($1);
-    return unless defined $opt;
+    unless($c_name =~ m/^(?:CURLOPT)_(.*)$/
+            and length($1)
+            and $opt = http::curl_easy_option_by_name($1)){
+        my @cl = caller(0);
+        die "Undefined subroutine &${cl[0]}::$c_name called at $cl[1] line $cl[2].\n";
+    }
     return $opt->{id};
 }
 
