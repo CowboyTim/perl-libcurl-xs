@@ -21,6 +21,12 @@ BOOT:
         newCONSTSUB(stash, "CURLE_FAILED_INIT"          , newSViv(CURLE_FAILED_INIT));
         newCONSTSUB(stash, "CURLE_URL_MALFORMAT"        , newSViv(CURLE_URL_MALFORMAT));
         newCONSTSUB(stash, "CURLE_COULDNT_RESOLVE_PROXY", newSViv(CURLE_COULDNT_RESOLVE_PROXY));
+        newCONSTSUB(stash, "CURLPAUSE_RECV"             , newSViv(CURLPAUSE_RECV));
+        newCONSTSUB(stash, "CURLPAUSE_RECV_CONT"        , newSViv(CURLPAUSE_RECV_CONT));
+        newCONSTSUB(stash, "CURLPAUSE_SEND"             , newSViv(CURLPAUSE_SEND));
+        newCONSTSUB(stash, "CURLPAUSE_SEND_CONT"        , newSViv(CURLPAUSE_SEND_CONT));
+        newCONSTSUB(stash, "CURLPAUSE_ALL"              , newSViv(CURLPAUSE_ALL));
+        newCONSTSUB(stash, "CURLPAUSE_CONT"             , newSViv(CURLPAUSE_CONT));
 }
 
 void curl_global_init(int flags=CURL_GLOBAL_DEFAULT)
