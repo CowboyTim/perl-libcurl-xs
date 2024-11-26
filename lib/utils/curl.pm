@@ -13,6 +13,17 @@ require XSLoader;
 XSLoader::load('utils::curl', $VERSION);
 XSLoader::load('utils::curl_constants', $VERSION);
 
+sub AUTOLOAD {
+    my (@a_args) = @_;
+    my $c_name = $AUTOLOAD;
+    $c_name =~ s/.*:://;
+    return unless $c_name =~ m/^(?:CURLOPT)_(.*)$/;
+    return unless length($1//"");
+    my $opt = http::curl_easy_option_by_name($1);
+    return unless defined $opt;
+    return $opt->{id};
+}
+
 package http::curl::easy;
 
 sub DESTROY {

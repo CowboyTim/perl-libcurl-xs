@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 19;
 
 BEGIN {use_ok('utils::curl', qw())};
 
@@ -42,4 +42,31 @@ BEGIN {use_ok('utils::curl', qw())};
      is($res[2], 'GET', 'http::curl_easy_getinfo() return real method: GET');
      is($res[3], 0, 'http::curl_easy_getinfo() return real speed download: 0');
      is($res[4], 0, 'http::curl_easy_getinfo() return real size download: 0');
+}
+
+{
+     my ($r, @res);
+     eval {
+         push @res, http::curl_easy_option_by_name();
+     };
+     is($@, '', 'http::curl_easy_option_by_name() eval empty');
+     is($res[0], undef, 'http::curl_easy_option_by_name() return empty');
+}
+
+{
+     my ($r, @res);
+     eval {
+         push @res, http::curl_easy_option_by_name("URL");
+     };
+     is($@, '', 'http::curl_easy_option_by_name() eval URL');
+     is_deeply($res[0], {name => 'URL', id => 10002, type => 4, flags => 0}, 'http::curl_easy_option_by_name() return URL');
+}
+
+{
+     my ($r, @res);
+     eval {
+         push @res, http::curl_easy_option_by_name("FOLLOWLOCATION");
+     };
+     is($@, '', 'http::curl_easy_option_by_name() eval FOLLOWLOCATION');
+     is_deeply($res[0], {name => 'FOLLOWLOCATION', id => 52, type => 0, flags => 0}, 'http::curl_easy_option_by_name() return FOLLOWLOCATION');
 }

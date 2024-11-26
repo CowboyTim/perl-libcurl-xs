@@ -13,73 +13,14 @@ MODULE = utils::curl                PACKAGE = http
 BOOT:
 {
         HV *stash = gv_stashpv("http", 0);
-        newCONSTSUB(stash, "CURLE_OK"           , newSViv(CURLE_OK));
+        newCONSTSUB(stash, "CURLE_OK"                   , newSViv(CURLE_OK));
         newCONSTSUB(stash, "CURLE_BAD_FUNCTION_ARGUMENT", newSViv(CURLE_BAD_FUNCTION_ARGUMENT));
-        newCONSTSUB(stash, "CURLE_UNSUPPORTED_PROTOCOL", newSViv(CURLE_UNSUPPORTED_PROTOCOL));
-        newCONSTSUB(stash, "CURLE_UNKNOWN_OPTION", newSViv(CURLE_UNKNOWN_OPTION));
-        newCONSTSUB(stash, "CURLE_NOT_BUILT_IN", newSViv(CURLE_NOT_BUILT_IN));
-        newCONSTSUB(stash, "CURLE_FAILED_INIT"  , newSViv(CURLE_FAILED_INIT));
-        newCONSTSUB(stash, "CURLE_URL_MALFORMAT", newSViv(CURLE_URL_MALFORMAT));
+        newCONSTSUB(stash, "CURLE_UNSUPPORTED_PROTOCOL" , newSViv(CURLE_UNSUPPORTED_PROTOCOL));
+        newCONSTSUB(stash, "CURLE_UNKNOWN_OPTION"       , newSViv(CURLE_UNKNOWN_OPTION));
+        newCONSTSUB(stash, "CURLE_NOT_BUILT_IN"         , newSViv(CURLE_NOT_BUILT_IN));
+        newCONSTSUB(stash, "CURLE_FAILED_INIT"          , newSViv(CURLE_FAILED_INIT));
+        newCONSTSUB(stash, "CURLE_URL_MALFORMAT"        , newSViv(CURLE_URL_MALFORMAT));
         newCONSTSUB(stash, "CURLE_COULDNT_RESOLVE_PROXY", newSViv(CURLE_COULDNT_RESOLVE_PROXY));
-        newCONSTSUB(stash, "CURLOPT_URL"        , newSViv(CURLOPT_URL));
-        newCONSTSUB(stash, "CURLOPT_SHARE"      , newSViv(CURLOPT_SHARE));
-        newCONSTSUB(stash, "CURLOPT_ERRORBUFFER", newSViv(CURLOPT_ERRORBUFFER));
-        newCONSTSUB(stash, "CURLOPT_VERBOSE"    , newSViv(CURLOPT_VERBOSE));
-        newCONSTSUB(stash, "CURLOPT_STDERR"     , newSViv(CURLOPT_STDERR));
-        newCONSTSUB(stash, "CURLOPT_WRITEFUNCTION", newSViv(CURLOPT_WRITEFUNCTION));
-        newCONSTSUB(stash, "CURLOPT_WRITEDATA"  , newSViv(CURLOPT_WRITEDATA));
-        newCONSTSUB(stash, "CURLOPT_READFUNCTION", newSViv(CURLOPT_READFUNCTION));
-        newCONSTSUB(stash, "CURLOPT_READDATA"    , newSViv(CURLOPT_READDATA));
-        newCONSTSUB(stash, "CURLOPT_HEADERFUNCTION", newSViv(CURLOPT_HEADERFUNCTION));
-        newCONSTSUB(stash, "CURLOPT_HEADERDATA"  , newSViv(CURLOPT_HEADERDATA));
-        newCONSTSUB(stash, "CURLOPT_HTTPHEADER"  , newSViv(CURLOPT_HTTPHEADER));
-        newCONSTSUB(stash, "CURLOPT_POST"        , newSViv(CURLOPT_POST));
-        newCONSTSUB(stash, "CURLOPT_POSTFIELDS"   , newSViv(CURLOPT_POSTFIELDS));
-        newCONSTSUB(stash, "CURLOPT_POSTFIELDSIZE", newSViv(CURLOPT_POSTFIELDSIZE));
-        newCONSTSUB(stash, "CURLOPT_POSTFIELDSIZE_LARGE", newSViv(CURLOPT_POSTFIELDSIZE_LARGE));
-        newCONSTSUB(stash, "CURLOPT_FOLLOWLOCATION", newSViv(CURLOPT_FOLLOWLOCATION));
-        newCONSTSUB(stash, "CURLINFO_RESPONSE_CODE", newSViv(CURLINFO_RESPONSE_CODE));
-        newCONSTSUB(stash, "CURLINFO_EFFECTIVE_URL", newSViv(CURLINFO_EFFECTIVE_URL));
-        newCONSTSUB(stash, "CURLINFO_EFFECTIVE_METHOD", newSViv(CURLINFO_EFFECTIVE_METHOD));
-        newCONSTSUB(stash, "CURLINFO_REDIRECT_URL", newSViv(CURLINFO_REDIRECT_URL));
-        newCONSTSUB(stash, "CURLINFO_CONTENT_TYPE", newSViv(CURLINFO_CONTENT_TYPE));
-        newCONSTSUB(stash, "CURLINFO_PRIVATE", newSViv(CURLINFO_PRIVATE));
-        newCONSTSUB(stash, "CURLINFO_PRIMARY_IP", newSViv(CURLINFO_PRIMARY_IP));
-        newCONSTSUB(stash, "CURLINFO_PRIMARY_PORT", newSViv(CURLINFO_PRIMARY_PORT));
-        newCONSTSUB(stash, "CURLINFO_LOCAL_IP", newSViv(CURLINFO_LOCAL_IP));
-        newCONSTSUB(stash, "CURLINFO_LOCAL_PORT", newSViv(CURLINFO_LOCAL_PORT));
-        newCONSTSUB(stash, "CURLINFO_OS_ERRNO", newSViv(CURLINFO_OS_ERRNO));
-        newCONSTSUB(stash, "CURLINFO_NUM_CONNECTS", newSViv(CURLINFO_NUM_CONNECTS));
-        newCONSTSUB(stash, "CURLINFO_PROXYAUTH_AVAIL", newSViv(CURLINFO_PROXYAUTH_AVAIL));
-        newCONSTSUB(stash, "CURLINFO_LASTSOCKET", newSViv(CURLINFO_LASTSOCKET));
-        newCONSTSUB(stash, "CURLINFO_FILETIME", newSViv(CURLINFO_FILETIME));
-        newCONSTSUB(stash, "CURLINFO_REDIRECT_COUNT", newSViv(CURLINFO_REDIRECT_COUNT));
-        newCONSTSUB(stash, "CURLINFO_HTTP_CONNECTCODE", newSViv(CURLINFO_HTTP_CONNECTCODE));
-        newCONSTSUB(stash, "CURLINFO_HTTPAUTH_AVAIL", newSViv(CURLINFO_HTTPAUTH_AVAIL));
-        newCONSTSUB(stash, "CURLINFO_HTTP_VERSION", newSViv(CURLINFO_HTTP_VERSION));
-        newCONSTSUB(stash, "CURLINFO_PROTOCOL", newSViv(CURLINFO_PROTOCOL));
-        newCONSTSUB(stash, "CURLINFO_SCHEME", newSViv(CURLINFO_SCHEME));
-        newCONSTSUB(stash, "CURLINFO_CERTINFO", newSViv(CURLINFO_CERTINFO));
-        newCONSTSUB(stash, "CURLINFO_CONDITION_UNMET", newSViv(CURLINFO_CONDITION_UNMET));
-        newCONSTSUB(stash, "CURLINFO_RTSP_CLIENT_CSEQ", newSViv(CURLINFO_RTSP_CLIENT_CSEQ));
-        newCONSTSUB(stash, "CURLINFO_RTSP_CSEQ_RECV", newSViv(CURLINFO_RTSP_CSEQ_RECV));
-        newCONSTSUB(stash, "CURLINFO_RTSP_SERVER_CSEQ", newSViv(CURLINFO_RTSP_SERVER_CSEQ));
-        newCONSTSUB(stash, "CURLINFO_TOTAL_TIME", newSViv(CURLINFO_TOTAL_TIME));
-        newCONSTSUB(stash, "CURLINFO_NAMELOOKUP_TIME", newSViv(CURLINFO_NAMELOOKUP_TIME));
-        newCONSTSUB(stash, "CURLINFO_CONNECT_TIME", newSViv(CURLINFO_CONNECT_TIME));
-        newCONSTSUB(stash, "CURLINFO_APPCONNECT_TIME", newSViv(CURLINFO_APPCONNECT_TIME));
-        newCONSTSUB(stash, "CURLINFO_PRETRANSFER_TIME", newSViv(CURLINFO_PRETRANSFER_TIME));
-        newCONSTSUB(stash, "CURLINFO_STARTTRANSFER_TIME", newSViv(CURLINFO_STARTTRANSFER_TIME));
-        newCONSTSUB(stash, "CURLINFO_REDIRECT_TIME", newSViv(CURLINFO_REDIRECT_TIME));
-        newCONSTSUB(stash, "CURLINFO_SIZE_UPLOAD", newSViv(CURLINFO_SIZE_UPLOAD));
-        newCONSTSUB(stash, "CURLINFO_SIZE_DOWNLOAD", newSViv(CURLINFO_SIZE_DOWNLOAD));
-        newCONSTSUB(stash, "CURLINFO_SPEED_DOWNLOAD", newSViv(CURLINFO_SPEED_DOWNLOAD));
-        newCONSTSUB(stash, "CURLINFO_SPEED_UPLOAD", newSViv(CURLINFO_SPEED_UPLOAD));
-        newCONSTSUB(stash, "CURLINFO_HEADER_SIZE", newSViv(CURLINFO_HEADER_SIZE));
-        newCONSTSUB(stash, "CURLINFO_REQUEST_SIZE", newSViv(CURLINFO_REQUEST_SIZE));
-        newCONSTSUB(stash, "CURLINFO_SSL_VERIFYRESULT", newSViv(CURLINFO_SSL_VERIFYRESULT));
-        newCONSTSUB(stash, "CURLINFO_CONTENT_LENGTH_DOWNLOAD", newSViv(CURLINFO_CONTENT_LENGTH_DOWNLOAD));
-        newCONSTSUB(stash, "CURLINFO_CONTENT_LENGTH_UPLOAD", newSViv(CURLINFO_CONTENT_LENGTH_UPLOAD));
 }
 
 void curl_global_init(int flags=CURL_GLOBAL_DEFAULT)
@@ -110,7 +51,7 @@ void curl_global_trace(...)
 #if (LIBCURL_VERSION_NUM >= 0x080000)
         if(items < 1)
             XSRETURN_UNDEF;
-        config = ST(0);
+        config = POPs;
         if(!config || !SvPOK(config))
             XSRETURN_UNDEF;
         r = curl_global_trace(SvPV_nolen(config));
@@ -129,12 +70,10 @@ void curl_easy_init()
         if(!c)
             XSRETURN_NO;
         //printf("c: %p\n", c);
-        ST(0) = &PL_sv_undef;
         SV *sv = sv_newmortal();
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
-        ST(0) = sv;
-        XSRETURN(1);
+        XPUSHs(sv);
 
 void curl_easy_cleanup(SV *http=NULL)
     PPCODE:
@@ -162,8 +101,7 @@ void curl_easy_strerror(int code)
         const char *s = curl_easy_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        ST(0) = sv_2mortal(newSVpv(s, 0));
-        XSRETURN(1);
+        XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
 void curl_easy_setopt(SV *http=NULL, IV c_opt=0, SV *value=NULL)
     PREINIT:
@@ -195,6 +133,42 @@ void curl_easy_setopt(SV *http=NULL, IV c_opt=0, SV *value=NULL)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
+void curl_easy_option_by_name(...)
+    PPCODE:
+        dTHX;
+        dSP;
+        SV *name = POPs;
+        if(!name || !SvPOK(name))
+            XSRETURN_UNDEF;
+        const struct curl_easyoption *opt = curl_easy_option_by_name(SvPV_nolen(name));
+        if(!opt){
+            printf("name NOT FOUND: %s\n", SvPV_nolen(name));
+            XSRETURN_UNDEF;
+        }
+        HV *rh = (HV *)sv_2mortal((SV *)newHV());
+        hv_store(rh, "name"  , 4, newSVpv(opt->name, 0), 0);
+        hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
+        hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
+        hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
+        XPUSHs(newRV_inc((SV *)rh));
+
+void curl_easy_getinfo_by_id(...)
+    PPCODE:
+        SV *id = POPs;
+        if(!id || !SvPOK(id))
+            XSRETURN_UNDEF;
+        dTHX;
+        dSP;
+        const struct curl_easyoption *opt = curl_easy_option_by_id(SvIV(id));
+        if(!opt)
+            XSRETURN_UNDEF;
+        HV *rh = (HV *)sv_2mortal((SV *)newHV());
+        hv_store(rh, "name"  , 4, newSVpv(opt->name, 0), 0);
+        hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
+        hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
+        hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
+        XPUSHs(newRV_inc((SV *)rh));
+
 void curl_easy_perform(SV *http=NULL)
     PREINIT:
         int r;
@@ -220,8 +194,7 @@ void curl_easy_duphandle(SV *http=NULL)
         SV *sv = sv_newmortal();
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
-        ST(0) = sv;
-        XSRETURN(1);
+        XPUSHs(sv);
 
 void curl_easy_escape(...)
     SV *url=NULL;
@@ -232,7 +205,7 @@ void curl_easy_escape(...)
         dSP;
         if(items < 1)
             XSRETURN_UNDEF;
-        url = ST(0);
+        url = POPs;
         if(!url || !SvPOK(url))
             XSRETURN_UNDEF;
 #if (LIBCURL_VERSION_NUM >= 0x075100)
@@ -246,9 +219,9 @@ void curl_easy_escape(...)
 #endif
         if(!s)
             XSRETURN_UNDEF;
-        ST(0) = sv_2mortal(newSVpv(s, 0));
+        SV *sv = sv_2mortal(newSVpv(s, 0));
         curl_free(s);
-        XSRETURN(1);
+        XPUSHs(sv);
 
 void curl_easy_unescape(...)
     SV *url=NULL;
@@ -259,7 +232,7 @@ void curl_easy_unescape(...)
         dSP;
         if(items < 1)
             XSRETURN_UNDEF;
-        url = ST(0);
+        url = POPs;
         if(!url || !SvPOK(url))
             XSRETURN_UNDEF;
 #if (LIBCURL_VERSION_NUM >= 0x075100)
@@ -273,9 +246,9 @@ void curl_easy_unescape(...)
 #endif
         if(!s)
             XSRETURN_UNDEF;
-        ST(0) = sv_2mortal(newSVpv(s, 0));
+        SV *sv = sv_2mortal(newSVpv(s, 0));
         curl_free(s);
-        XSRETURN(1);
+        XPUSHs(sv);
 
 void curl_easy_getinfo(SV *http=NULL, int info=0)
     PREINIT:
