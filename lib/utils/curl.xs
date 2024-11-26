@@ -116,17 +116,26 @@ void curl_easy_setopt(SV *http=NULL, IV c_opt=0, SV *value=NULL)
             XSRETURN_UNDEF;
 
         //printf("p: %p, f: %d & %d\n", SvIV(SvRV(http)), c_opt, CURLOPT_VERBOSE);
-        if(c_opt == CURLOPT_URL){
+        if(
+               c_opt == CURLOPT_URL
+        ){
             if(!SvPOK(value))
-                XSRETURN_NO;
+                XSRETURN_UNDEF;
             _v = SvPV_nolen(value);
-        } else if(c_opt == CURLOPT_ERRORBUFFER){
-            XSRETURN_NO;
-        } else if(c_opt == CURLOPT_VERBOSE){
+        } else if(
+               c_opt == CURLOPT_ERRORBUFFER
+        ){
+            XSRETURN_UNDEF;
+        } else if(
+               c_opt == CURLOPT_VERBOSE
+            || c_opt == CURLOPT_TCP_KEEPALIVE
+            || c_opt == CURLOPT_TCP_KEEPIDLE
+            || c_opt == CURLOPT_TCP_KEEPINTVL
+        ){
             _v = (void *)SvIV(value);
             //printf("p: %p, _v: %d\n", SvIV(SvRV(http)), _v);
         } else {
-            XSRETURN_NO;
+            XSRETURN_UNDEF;
         }
         r = curl_easy_setopt((CURL *)SvIV(SvRV(http)), c_opt, _v);
         if(r != CURLE_OK)
@@ -142,7 +151,6 @@ void curl_easy_option_by_name(...)
             XSRETURN_UNDEF;
         const struct curl_easyoption *opt = curl_easy_option_by_name(SvPV_nolen(name));
         if(!opt){
-            printf("name NOT FOUND: %s\n", SvPV_nolen(name));
             XSRETURN_UNDEF;
         }
         HV *rh = (HV *)sv_2mortal((SV *)newHV());
@@ -154,11 +162,11 @@ void curl_easy_option_by_name(...)
 
 void curl_easy_getinfo_by_id(...)
     PPCODE:
+        dTHX;
+        dSP;
         SV *id = POPs;
         if(!id || !SvPOK(id))
             XSRETURN_UNDEF;
-        dTHX;
-        dSP;
         const struct curl_easyoption *opt = curl_easy_option_by_id(SvIV(id));
         if(!opt)
             XSRETURN_UNDEF;
@@ -352,3 +360,29 @@ void curl_easy_getinfo(SV *http=NULL, int info=0)
         } else {
             XSRETURN_UNDEF;
         }
+
+void curl_easy_pause(SV *http=NULL, int bitmask=0)
+    PREINIT:
+        int r = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        r = curl_easy_pause((CURL *)SvIV(SvRV(http)), bitmask);
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        XSRETURN_IV(0);
+
+void curl_easy_upkeep(SV *http=NULL)
+    PREINIT:
+        int r = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        r = curl_easy_upkeep((CURL *)SvIV(SvRV(http)));
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        XSRETURN_IV(0);
