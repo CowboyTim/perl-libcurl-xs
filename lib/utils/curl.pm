@@ -25,7 +25,7 @@ sub AUTOLOAD {
         }
         return &{"http::$c_name"}(@a_args);
     }
-    if($c_name =~ m/^(?:CURLE|CURLINFO|CURLPROXY)_(?:.*)$/){
+    if($c_name =~ m/^(?:CURLE|CURLINFO|CURLPROXY|CURLM|CURLMOPT|CURLMSG)_(?:.*)$/){
         XSLoader::load('utils::curl_constants', $VERSION);
         unless(UNIVERSAL::can("http",$c_name)){
             my @cl = caller(0);
