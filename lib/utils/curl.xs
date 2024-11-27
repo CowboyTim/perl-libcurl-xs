@@ -327,7 +327,7 @@ void curl_easy_recv(SV *http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, IV m
         dSP;
         if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        if(!data || !SvPOK(data) || SvRV(data) == &PL_sv_undef)
+        if(!data || !SvPOK(data) || data == &PL_sv_undef)
             XSRETURN_UNDEF;
         if(max_sz == 0)
             XSRETURN_IV(0);
@@ -426,7 +426,7 @@ void curl_multi_strerror(int code)
             XSRETURN_UNDEF;
         XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
-void curl_multi_timeout(SV *http=NULL)
+void curl_multi_timeout(SV *http=NULL, SV *timeout = NULL)
     PREINIT:
         long l = 0;
     PPCODE:
@@ -436,8 +436,11 @@ void curl_multi_timeout(SV *http=NULL)
             XSRETURN_UNDEF;
         int r = curl_multi_timeout((CURLM *)SvIV(SvRV(http)), &l);
         if(r != CURLM_OK)
-            XSRETURN_UNDEF;
-        XSRETURN_IV(l);
+            XSRETURN_IV(r);
+        if(timeout != NULL && timeout != &PL_sv_undef){
+            sv_setiv(timeout, l);
+        }
+        XSRETURN_IV(0);
 
 void curl_multi_info_read(SV *http=NULL)
     PREINIT:
@@ -517,7 +520,7 @@ void curl_multi_fdset(SV *http=NULL)
         XPUSHs(newRV_noinc((SV *)we));
         XPUSHs(newRV_noinc((SV *)ee));
 
-void curl_multi_poll(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_sv_undef, SV *numfds=&PL_sv_undef)
+void curl_multi_poll(SV *http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
     PREINIT:
         int r = 0;
         int nfds = 0;
@@ -526,13 +529,15 @@ void curl_multi_poll(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_s
         dSP;
         if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        r = curl_multi_poll((CURLM *)SvIV(SvRV(http)), NULL, 0, SvIV(timeout), &nfds);
+        r = curl_multi_poll((CURLM *)SvIV(SvRV(http)), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        SvIV_set(numfds, nfds);
+        if(numfds != NULL && numfds != &PL_sv_undef){
+            sv_setiv(numfds, nfds);
+        }
         XSRETURN_IV(0);
 
-void curl_multi_wait(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_sv_undef, SV *numfds=&PL_sv_undef)
+void curl_multi_wait(SV *http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
     PREINIT:
         int r = 0;
         int nfds = 0;
@@ -541,10 +546,12 @@ void curl_multi_wait(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_s
         dSP;
         if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        r = curl_multi_wait((CURLM *)SvIV(SvRV(http)), NULL, 0, SvIV(timeout), &nfds);
+        r = curl_multi_wait((CURLM *)SvIV(SvRV(http)), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        SvIV_set(numfds, nfds);
+        if(numfds != NULL && numfds != &PL_sv_undef){
+            sv_setiv(numfds, nfds);
+        }
         XSRETURN_IV(0);
 
 void curl_multi_get_handles(SV *http=NULL)
