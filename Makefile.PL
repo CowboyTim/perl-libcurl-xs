@@ -4,6 +4,7 @@ WriteMakefile(
     NAME                => 'utils::curl',
     VERSION             => '0.01',
     LIBS                => ['-lcurl'],
+    CCFLAGS             => '-Wextra -Werror -Os',
     DEFINE              => '',
     INC                 => '-I.',
     NO_META             => 1,
