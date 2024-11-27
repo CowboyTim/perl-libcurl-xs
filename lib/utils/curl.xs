@@ -17,10 +17,6 @@ BOOT:
         newCONSTSUB(stash, "CURLE_BAD_FUNCTION_ARGUMENT", newSViv(CURLE_BAD_FUNCTION_ARGUMENT));
         newCONSTSUB(stash, "CURLE_UNSUPPORTED_PROTOCOL" , newSViv(CURLE_UNSUPPORTED_PROTOCOL));
         newCONSTSUB(stash, "CURLE_UNKNOWN_OPTION"       , newSViv(CURLE_UNKNOWN_OPTION));
-        newCONSTSUB(stash, "CURLE_NOT_BUILT_IN"         , newSViv(CURLE_NOT_BUILT_IN));
-        newCONSTSUB(stash, "CURLE_FAILED_INIT"          , newSViv(CURLE_FAILED_INIT));
-        newCONSTSUB(stash, "CURLE_URL_MALFORMAT"        , newSViv(CURLE_URL_MALFORMAT));
-        newCONSTSUB(stash, "CURLE_COULDNT_RESOLVE_PROXY", newSViv(CURLE_COULDNT_RESOLVE_PROXY));
         newCONSTSUB(stash, "CURLPAUSE_RECV"             , newSViv(CURLPAUSE_RECV));
         newCONSTSUB(stash, "CURLPAUSE_RECV_CONT"        , newSViv(CURLPAUSE_RECV_CONT));
         newCONSTSUB(stash, "CURLPAUSE_SEND"             , newSViv(CURLPAUSE_SEND));
@@ -121,25 +117,18 @@ void curl_easy_setopt(SV *http=NULL, IV c_opt=0, SV *value=NULL)
         if(value == NULL)
             XSRETURN_UNDEF;
 
-        //printf("p: %p, f: %d & %d\n", SvIV(SvRV(http)), c_opt, CURLOPT_VERBOSE);
-        if(
-               c_opt == CURLOPT_URL
-        ){
+        //printf("p: %p, f: %d & %d\n", SvIV(SvRV(http)), c_opt, CURLOPT_URL);
+        if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
+            _v = (long *)SvIV(value);
+        } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             if(!SvPOK(value))
                 XSRETURN_UNDEF;
-            _v = SvPV_nolen(value);
-        } else if(
-               c_opt == CURLOPT_ERRORBUFFER
-        ){
+            _v = (char *)SvPV_nolen(value);
+        } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
             XSRETURN_UNDEF;
-        } else if(
-               c_opt == CURLOPT_VERBOSE
-            || c_opt == CURLOPT_TCP_KEEPALIVE
-            || c_opt == CURLOPT_TCP_KEEPIDLE
-            || c_opt == CURLOPT_TCP_KEEPINTVL
-        ){
-            _v = (void *)SvIV(value);
-            //printf("p: %p, _v: %d\n", SvIV(SvRV(http)), _v);
+        } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
+            _v = (curl_off_t *)SvIV(value);
+            XSRETURN_UNDEF;
         } else {
             XSRETURN_UNDEF;
         }
@@ -318,6 +307,7 @@ void curl_easy_getinfo(SV *http=NULL, int info=0)
             || info == CURLINFO_PROXY_SSL_VERIFYRESULT
             || info == CURLINFO_PROTOCOL
             || info == CURLINFO_PROXY_ERROR
+            || info == CURLINFO_ACTIVESOCKET
         ){
             r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), info, &l);
             if(r != CURLE_OK)
@@ -391,6 +381,46 @@ void curl_easy_upkeep(SV *http=NULL)
         r = curl_easy_upkeep((CURL *)SvIV(SvRV(http)));
         if(r != CURLE_OK)
             XSRETURN_IV(r);
+        XSRETURN_IV(0);
+
+void curl_easy_send(SV *http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, )
+    PREINIT:
+        int r = 0;
+        size_t sent_sz = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        if(!data || !SvPOK(data))
+            XSRETURN_UNDEF;
+        r = curl_easy_send((CURL *)SvIV(SvRV(http)), SvPV_nolen(data), SvCUR(data), &sent_sz);
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        //printf("data: %s %d\n", SvPV_nolen(data), sent_sz);
+        XSRETURN_IV(0);
+
+void curl_easy_recv(SV *http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, IV max_sz=0)
+    PREINIT:
+        int r = 0;
+        size_t recv_sz = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        if(!data || !SvPOK(data) || SvRV(data) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        if(max_sz == 0)
+            XSRETURN_IV(0);
+        SV *buf = newSV(max_sz);
+        SvPOK_only(buf);
+        r = curl_easy_recv((CURL *)SvIV(SvRV(http)), SvPVX(buf), max_sz, &recv_sz);
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        buf = sv_2mortal(buf);
+        SvCUR_set(buf, recv_sz);
+        sv_catsv_nomg(data, buf);
         XSRETURN_IV(0);
 
 void curl_getdate(...)
