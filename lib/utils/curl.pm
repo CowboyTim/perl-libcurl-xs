@@ -48,4 +48,16 @@ sub DESTROY {
     http::curl_easy_cleanup($_[0]) if defined $_[0] and defined $$_[0];
 }
 
+package http::curl::multi;
+
+sub DESTROY {
+    my ($curlm) = @_;
+    return unless defined $curlm and defined $$curlm;
+    foreach my $easy_handle (http::curl_multi_get_handles($curlm)){
+        http::curl_multi_remove_handle($curlm, $easy_handle);
+        http::curl_easy_cleanup($easy_handle);
+    }
+    http::curl_multi_cleanup($curlm);
+}
+
 1;

@@ -354,14 +354,18 @@ void curl_multi_init()
         XPUSHs(sv);
 
 void curl_mutli_cleanup(SV *http=NULL)
+    PREINIT:
+        int r = 0;
     PPCODE:
         dTHX;
         dSP;
         if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        curl_multi_cleanup((CURLM *)SvIV(SvRV(http)));
+        r = curl_multi_cleanup((CURLM *)SvIV(SvRV(http)));
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
         SvRV(http) = &PL_sv_undef;
-        XSRETURN_UNDEF;
+        XSRETURN_IV(0);
 
 void curl_multi_wakeup(SV *http=NULL)
     PPCODE:
@@ -513,6 +517,36 @@ void curl_multi_fdset(SV *http=NULL)
         XPUSHs(newRV_noinc((SV *)we));
         XPUSHs(newRV_noinc((SV *)ee));
 
+void curl_multi_poll(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_sv_undef, SV *numfds=&PL_sv_undef)
+    PREINIT:
+        int r = 0;
+        int nfds = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        r = curl_multi_poll((CURLM *)SvIV(SvRV(http)), NULL, 0, SvIV(timeout), &nfds);
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
+        SvIV_set(numfds, nfds);
+        XSRETURN_IV(0);
+
+void curl_multi_wait(SV *http=NULL, SV *extrafds=&PL_sv_undef, SV *timeout=&PL_sv_undef, SV *numfds=&PL_sv_undef)
+    PREINIT:
+        int r = 0;
+        int nfds = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        r = curl_multi_wait((CURLM *)SvIV(SvRV(http)), NULL, 0, SvIV(timeout), &nfds);
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
+        SvIV_set(numfds, nfds);
+        XSRETURN_IV(0);
+
 void curl_multi_get_handles(SV *http=NULL)
     PPCODE:
         dTHX;
@@ -532,6 +566,7 @@ void curl_multi_get_handles(SV *http=NULL)
             SvREADONLY_on(sv);
             av_push(av, sv);
         }
+        curl_free(e);
         XPUSHs(sv_2mortal(newRV_noinc((SV *)av));
 #else
         XSRETURN_EMPTY;
