@@ -18,7 +18,7 @@ isnt($$r, undef, 'http::curl_easy_init(): return value ok');
     is($res, http::CURLE_OK(), 'http::curl_easy_perform(): return value ok');
 }
 my $r_s = http::curl_easy_getinfo($r, http::CURLINFO_ACTIVESOCKET());
-isnt($r_s, undef, 'http::curl_easy_getinfo(): return value ok: FD='.$r_s);
+like($r_s, qr/\d+/, 'http::curl_easy_getinfo(): return value ok: FD='.$r_s);
 my $rin = '';
 vec($rin, $r_s, 1) = 1;
 {

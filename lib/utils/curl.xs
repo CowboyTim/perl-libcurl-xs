@@ -253,9 +253,10 @@ void curl_easy_unescape(...)
         curl_free(s);
         XPUSHs(sv);
 
-void curl_easy_getinfo(SV *http=NULL, int info=0)
+void curl_easy_getinfo(SV *http=NULL, int c_info=0)
     PREINIT:
         long l = 0;
+        curl_off_t o = 0;
         int r = 0;
         double d = 0;
         char *s = NULL;
@@ -264,95 +265,39 @@ void curl_easy_getinfo(SV *http=NULL, int info=0)
         dSP;
         if(!http || !SvROK(http) || SvRV(http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        if(info == 0)
+        if(c_info == 0)
             XSRETURN_UNDEF;
-        if(
-               info == CURLINFO_EFFECTIVE_URL
-            || info == CURLINFO_CONTENT_TYPE
-            || info == CURLINFO_PRIVATE
-            || info == CURLINFO_FTP_ENTRY_PATH
-            || info == CURLINFO_REDIRECT_URL
-            || info == CURLINFO_PRIMARY_IP
-            || info == CURLINFO_RTSP_SESSION_ID
-            || info == CURLINFO_LOCAL_IP
-            || info == CURLINFO_SCHEME
-            || info == CURLINFO_EFFECTIVE_METHOD
-            || info == CURLINFO_REFERER
-        ){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), info, &s);
+        if(c_info >= CURLINFO_STRING && c_info < CURLINFO_LONG){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &s);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             ST(0) = sv_2mortal(newSVpv(s, 0));
             XSRETURN(1);
-        } else if(
-               info == CURLINFO_RESPONSE_CODE
-            || info == CURLINFO_HEADER_SIZE
-            || info == CURLINFO_REQUEST_SIZE
-            || info == CURLINFO_SSL_VERIFYRESULT
-            || info == CURLINFO_FILETIME
-            || info == CURLINFO_REDIRECT_COUNT
-            || info == CURLINFO_HTTP_CONNECTCODE
-            || info == CURLINFO_HTTPAUTH_AVAIL
-            || info == CURLINFO_PROXYAUTH_AVAIL
-            || info == CURLINFO_OS_ERRNO
-            || info == CURLINFO_NUM_CONNECTS
-            || info == CURLINFO_LASTSOCKET
-            || info == CURLINFO_CONDITION_UNMET
-            || info == CURLINFO_RTSP_CLIENT_CSEQ
-            || info == CURLINFO_RTSP_SERVER_CSEQ
-            || info == CURLINFO_RTSP_CSEQ_RECV
-            || info == CURLINFO_PRIMARY_PORT
-            || info == CURLINFO_LOCAL_PORT
-            || info == CURLINFO_HTTP_VERSION
-            || info == CURLINFO_PROXY_SSL_VERIFYRESULT
-            || info == CURLINFO_PROTOCOL
-            || info == CURLINFO_PROXY_ERROR
-            || info == CURLINFO_ACTIVESOCKET
-        ){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), info, &l);
+        } else if(c_info >= CURLINFO_LONG && c_info < CURLINFO_DOUBLE){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &l);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_IV(l);
-        } else if(
-               info == CURLINFO_TOTAL_TIME
-            || info == CURLINFO_NAMELOOKUP_TIME
-            || info == CURLINFO_CONNECT_TIME
-            || info == CURLINFO_PRETRANSFER_TIME
-            || info == CURLINFO_SIZE_UPLOAD
-            || info == CURLINFO_SIZE_DOWNLOAD
-            || info == CURLINFO_SPEED_DOWNLOAD
-            || info == CURLINFO_SPEED_UPLOAD
-            || info == CURLINFO_CONTENT_LENGTH_DOWNLOAD
-            || info == CURLINFO_CONTENT_LENGTH_UPLOAD
-            || info == CURLINFO_STARTTRANSFER_TIME
-            || info == CURLINFO_REDIRECT_TIME
-            || info == CURLINFO_APPCONNECT_TIME
-        ){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), info, &d);
+        } else if(c_info >= CURLINFO_DOUBLE && c_info < CURLINFO_SLIST){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &d);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_NV(d);
-        } else if(
-               info == CURLINFO_SIZE_UPLOAD_T
-            || info == CURLINFO_SIZE_DOWNLOAD_T
-            || info == CURLINFO_SPEED_DOWNLOAD_T
-            || info == CURLINFO_SPEED_UPLOAD_T
-            || info == CURLINFO_FILETIME_T
-            || info == CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
-            || info == CURLINFO_CONTENT_LENGTH_UPLOAD_T
-            || info == CURLINFO_TOTAL_TIME_T
-            || info == CURLINFO_NAMELOOKUP_TIME_T
-            || info == CURLINFO_CONNECT_TIME_T
-            || info == CURLINFO_PRETRANSFER_TIME_T
-            || info == CURLINFO_STARTTRANSFER_TIME_T
-            || info == CURLINFO_REDIRECT_TIME_T
-            || info == CURLINFO_APPCONNECT_TIME_T
-            || info == CURLINFO_RETRY_AFTER
-        ){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), info, &d);
+        } else if(c_info >= CURLINFO_PTR && c_info < CURLINFO_SOCKET){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &l);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
-            XSRETURN_NV(d/1000);
+            XSRETURN_IV(l);
+        } else if(c_info >= CURLINFO_SOCKET && c_info < CURLINFO_OFF_T){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &l);
+            if(r != CURLE_OK)
+                XSRETURN_UNDEF;
+            XSRETURN_IV(l);
+        } else if(c_info >= CURLINFO_OFF_T){
+            r = curl_easy_getinfo((CURL *)SvIV(SvRV(http)), c_info, &o);
+            if(r != CURLE_OK)
+                XSRETURN_UNDEF;
+            XSRETURN_IV((IV)((long)o));
         } else {
             XSRETURN_UNDEF;
         }
