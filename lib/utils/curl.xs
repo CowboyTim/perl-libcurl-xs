@@ -353,7 +353,7 @@ void curl_multi_init()
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void curl_mutli_cleanup(SV *http=NULL)
+void curl_multi_cleanup(SV *http=NULL)
     PREINIT:
         int r = 0;
     PPCODE:
