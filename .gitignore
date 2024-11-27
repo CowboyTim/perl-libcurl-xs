@@ -12,3 +12,4 @@ Makefile.old
 *.o
 *.bs
 *.bs
+lib/utils/curl_constants.xs
