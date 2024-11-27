@@ -16,6 +16,15 @@ sub AUTOLOAD {
     my (@a_args) = @_;
     my $c_name = $AUTOLOAD;
     $c_name =~ s/.*:://;
+    if($c_name =~ m/^curl_version|curl_version_info|curl_getdate|global_(init|cleanup|trace)$/){
+        print "curl: $c_name\n";
+        XSLoader::load('utils::curl_common', $VERSION);
+        unless(UNIVERSAL::can("http",$c_name)){
+            my @cl = caller(0);
+            die "Undefined subroutine &${cl[0]}::$c_name called at $cl[1] line $cl[2].\n";
+        }
+        return &{"http::$c_name"}(@a_args);
+    }
     if($c_name =~ m/^(?:CURLE|CURLINFO|CURLPROXY)_(?:.*)$/){
         XSLoader::load('utils::curl_constants', $VERSION);
         unless(UNIVERSAL::can("http",$c_name)){
