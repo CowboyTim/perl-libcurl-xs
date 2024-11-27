@@ -13,10 +13,6 @@ MODULE = utils::curl                PACKAGE = http
 BOOT:
 {
         HV *stash = gv_stashpv("http", 0);
-        newCONSTSUB(stash, "CURLE_OK"                   , newSViv(CURLE_OK));
-        newCONSTSUB(stash, "CURLE_BAD_FUNCTION_ARGUMENT", newSViv(CURLE_BAD_FUNCTION_ARGUMENT));
-        newCONSTSUB(stash, "CURLE_UNSUPPORTED_PROTOCOL" , newSViv(CURLE_UNSUPPORTED_PROTOCOL));
-        newCONSTSUB(stash, "CURLE_UNKNOWN_OPTION"       , newSViv(CURLE_UNKNOWN_OPTION));
         newCONSTSUB(stash, "CURLPAUSE_RECV"             , newSViv(CURLPAUSE_RECV));
         newCONSTSUB(stash, "CURLPAUSE_RECV_CONT"        , newSViv(CURLPAUSE_RECV_CONT));
         newCONSTSUB(stash, "CURLPAUSE_SEND"             , newSViv(CURLPAUSE_SEND));

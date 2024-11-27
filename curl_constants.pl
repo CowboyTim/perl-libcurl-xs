@@ -16,4 +16,7 @@ close $fh;
 push @c, $str =~ m/^\s*(CURLINFO_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLE_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLPROXY_(?:[A-Z_0-9]+))\s*/gms;
+my %uniq;
+@uniq{@c} = ();
+@c = sort keys %uniq;
 @c;
