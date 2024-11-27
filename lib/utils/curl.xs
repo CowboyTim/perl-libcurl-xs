@@ -41,12 +41,12 @@ void curl_global_cleanup()
 
 void curl_global_trace(...)
     PREINIT:
-        SV *config = NULL;
-        int r = 0;
     PPCODE:
         dTHX;
-        dSP;
 #if (LIBCURL_VERSION_NUM >= 0x080000)
+        dSP;
+        SV *config = NULL;
+        int r = 0;
         if(items < 1)
             XSRETURN_UNDEF;
         config = POPs;
