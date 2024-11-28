@@ -10,6 +10,9 @@
 
 MODULE = utils::curl                PACKAGE = http
 
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
 BOOT:
 {
         HV *stash = gv_stashpv("http", 0);

@@ -28,6 +28,9 @@ print {$c_fh} <<'HERE';
 
 MODULE = utils::curl_constants  PACKAGE = utils::curl_constants
 
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
 BOOT:
 {
 HV *stash = gv_stashpv("http", 0);
@@ -54,7 +57,6 @@ WriteMakefile(
     XSMULTI             => 1,
     LINKTYPE            => 'dynamic',
     BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
-    XSOPT               => '-noversioncheck',
     XS                  => {
         'lib/utils/curl.xs'           => 'lib/utils/curl.c',
         'lib/utils/curl_constants.xs' => 'lib/utils/curl_constants.c',

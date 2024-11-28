@@ -1,6 +1,7 @@
 package utils::curl_constants;
 
-our $VERSION = '0.01';
+our $VERSION    = '0.01';
+our $XS_VERSION = '0.01';
 
 require DynaLoader;
 DynaLoader::bootstrap(__PACKAGE__, $VERSION);

@@ -8,6 +8,9 @@
 
 MODULE = utils::curl_common                PACKAGE = http
 
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
 void curl_global_init(int flags=CURL_GLOBAL_DEFAULT)
     PREINIT:
         int r;
