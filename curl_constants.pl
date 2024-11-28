@@ -16,8 +16,9 @@ for my $f (qw(curl/curl.h curl/multi.h curl/easy.h)){
 push @c, $str =~ m/^\s*(CURLINFO_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLE_(?:[A-Z_0-9]+))\s*/gms;
 my $m_str = $str =~ s/.*typedef enum \{(.*?)\} CURLMoption;.*/$1/gmsr;
-push @c, $m_str =~ m/^\s*(CURLM_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $m_str =~ m/^\s*(CURLMOPT_(?:[A-Z_0-9]+))\s*/gms;
+my $s_str = $str =~ s/.*typedef enum \{(.*?)\} CURLMcode;.*/$1/gmsr;
+push @c, $s_str =~ m/^\s*(CURLM_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLMSG_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLPROXY_(?:[A-Z_0-9]+))\s*/gms;
 my $n_str = $str =~ s/.*typedef enum \{(.*?)\} CURLoption;.*/$1/gmsr;

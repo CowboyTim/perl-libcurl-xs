@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 15;
 use strict; use warnings;
 
 BEGIN {use_ok('utils::curl', qw())};
@@ -23,7 +23,14 @@ eval {
 like($@, qr/Undefined subroutine/, 'http::curl_easy_setopt() CURLOPT_TCP_KEEPCNT');
 
 is(http::curl_easy_setopt(), undef, 'http::curl_easy_setopt() error check 1');
-is(http::curl_easy_setopt($r1), undef, 'http::curl_easy_setopt() error check 2');
+{
+    no warnings;
+    my $r_nok = http::curl_easy_setopt($r1);
+    is($r_nok, 48, 'http::curl_easy_setopt() error check 2');
+    is(http::curl_easy_strerror($r_nok), 'An unknown option was passed in to libcurl', 'http::curl_easy_strerror() error check');
+    is($r_nok, http::CURLE_UNKNOWN_OPTION(), 'http::curl_easy_strerror() error check');
+
+}
 
 eval {
     http::unknown_function();

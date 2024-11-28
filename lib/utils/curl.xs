@@ -46,6 +46,10 @@ BOOT:
 #define CURLOPTTYPE_BLOB 40000
 #endif
 
+#define THISSvOK(sv) (sv != NULL && SvROK(sv) && SvRV(sv) != &PL_sv_undef && INT2PTR(void *, SvIV(SvRV(sv))) != NULL)
+#define THIS(sv)   INT2PTR(void *, SvIV(SvRV(sv)))
+
+
 void curl_easy_init()
     PPCODE:
         dTHX;
@@ -53,29 +57,31 @@ void curl_easy_init()
         CURL *c = curl_easy_init();
         if(!c)
             XSRETURN_NO;
-        //printf("c: %p\n", c);
+        //printf("c: %lld, %p\n", (long long)c, c);
         SV *sv = sv_newmortal();
+        SvPOK_only(sv);
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void curl_easy_cleanup(SV *e_http=NULL)
+void curl_easy_cleanup(SV *e_http=&PL_sv_undef)
     PPCODE:
         dTHX;
         dSP;
+        POPs;
         if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        curl_easy_cleanup((CURL *)SvIV(SvRV(e_http)));
+        curl_easy_cleanup((CURL *)THIS(e_http));
         SvRV(e_http) = &PL_sv_undef;
         XSRETURN_UNDEF;
 
-void curl_easy_reset(SV *e_http=NULL)
+void curl_easy_reset(SV *e_http=&PL_sv_undef)
     PPCODE:
         dTHX;
         dSP;
         if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        curl_easy_reset((CURL *)SvIV(SvRV(e_http)));
+        curl_easy_reset((CURL *)THIS(e_http));
         XSRETURN_UNDEF;
 
 void curl_easy_strerror(int code)
@@ -87,19 +93,19 @@ void curl_easy_strerror(int code)
             XSRETURN_UNDEF;
         XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
-void curl_easy_setopt(SV *e_http=NULL, IV c_opt=0, SV *value=NULL)
+void curl_easy_setopt(SV *e_http=&PL_sv_undef, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
         int r = 0;
         void *_v = NULL;
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         if(value == NULL)
             XSRETURN_UNDEF;
 
-        //printf("p: %p, f: %d & %d\n", SvIV(SvRV(e_http)), c_opt, CURLOPT_URL);
+        //printf("p: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
             _v = (long *)SvIV(value);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
@@ -113,7 +119,7 @@ void curl_easy_setopt(SV *e_http=NULL, IV c_opt=0, SV *value=NULL)
         } else {
             XSRETURN_UNDEF;
         }
-        r = curl_easy_setopt((CURL *)SvIV(SvRV(e_http)), c_opt, _v);
+        r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _v);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
@@ -161,26 +167,26 @@ void curl_easy_option_by_id(...)
         croak("curl_easy_option_by_id is not supported in this version of libcurl");
 #endif
 
-void curl_easy_perform(SV *e_http=NULL)
+void curl_easy_perform(SV *e_http=&PL_sv_undef)
     PREINIT:
         int r;
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        r = curl_easy_perform((CURL *)SvIV(SvRV(e_http)));
+        r = curl_easy_perform((CURL *)THIS(e_http));
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void curl_easy_duphandle(SV *e_http=NULL)
+void curl_easy_duphandle(SV *e_http=&PL_sv_undef)
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        CURL *c = curl_easy_duphandle((CURL *)SvIV(SvRV(e_http)));
+        CURL *c = curl_easy_duphandle((CURL *)THIS(e_http));
         if(!c)
             XSRETURN_NO;
         SV *sv = sv_newmortal();
@@ -242,7 +248,7 @@ void curl_easy_unescape(...)
         curl_free(s);
         XPUSHs(sv);
 
-void curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
+void curl_easy_getinfo(SV *e_http=&PL_sv_undef, int c_info=0)
     PREINIT:
         long l = 0;
         curl_off_t o = 0;
@@ -252,38 +258,38 @@ void curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         if(c_info == 0)
             XSRETURN_UNDEF;
         if(c_info >= CURLINFO_STRING && c_info < CURLINFO_LONG){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &s);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &s);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             ST(0) = sv_2mortal(newSVpv(s, 0));
             XSRETURN(1);
         } else if(c_info >= CURLINFO_LONG && c_info < CURLINFO_DOUBLE){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &l);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &l);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_IV(l);
         } else if(c_info >= CURLINFO_DOUBLE && c_info < CURLINFO_SLIST){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &d);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &d);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_NV(d);
         } else if(c_info >= CURLINFO_PTR && c_info < CURLINFO_SOCKET){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &l);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &l);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_IV(l);
         } else if(c_info >= CURLINFO_SOCKET && c_info < CURLINFO_OFF_T){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &l);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &l);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_IV(l);
         } else if(c_info >= CURLINFO_OFF_T){
-            r = curl_easy_getinfo((CURL *)SvIV(SvRV(e_http)), c_info, &o);
+            r = curl_easy_getinfo((CURL *)THIS(e_http), c_info, &o);
             if(r != CURLE_OK)
                 XSRETURN_UNDEF;
             XSRETURN_IV((IV)((long)o));
@@ -291,29 +297,29 @@ void curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
             XSRETURN_UNDEF;
         }
 
-void curl_easy_pause(SV *e_http=NULL, int bitmask=0)
+void curl_easy_pause(SV *e_http=&PL_sv_undef, int bitmask=0)
     PREINIT:
         int r = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        r = curl_easy_pause((CURL *)SvIV(SvRV(e_http)), bitmask);
+        r = curl_easy_pause((CURL *)THIS(e_http), bitmask);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void curl_easy_upkeep(SV *e_http=NULL)
+void curl_easy_upkeep(SV *e_http=&PL_sv_undef)
     PREINIT:
         int r = 0;
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        r = curl_easy_upkeep((CURL *)SvIV(SvRV(e_http)));
+        r = curl_easy_upkeep((CURL *)THIS(e_http));
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
@@ -321,31 +327,31 @@ void curl_easy_upkeep(SV *e_http=NULL)
         croak("curl_easy_upkeep is not supported in this version of libcurl");
 #endif
 
-void curl_easy_send(SV *e_http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, )
+void curl_easy_send(SV *e_http=&PL_sv_undef, SV *data=&PL_sv_undef, )
     PREINIT:
         int r = 0;
         size_t sent_sz = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         if(!data || !SvPOK(data))
             XSRETURN_UNDEF;
-        r = curl_easy_send((CURL *)SvIV(SvRV(e_http)), SvPV_nolen(data), SvCUR(data), &sent_sz);
+        r = curl_easy_send((CURL *)THIS(e_http), SvPV_nolen(data), SvCUR(data), &sent_sz);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         //printf("data: %s %d\n", SvPV_nolen(data), sent_sz);
         XSRETURN_IV(0);
 
-void curl_easy_recv(SV *e_http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, IV max_sz=0)
+void curl_easy_recv(SV *e_http=&PL_sv_undef, SV *data=&PL_sv_undef, IV max_sz=0)
     PREINIT:
         int r = 0;
         size_t recv_sz = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         if(!data || !SvPOK(data) || data == &PL_sv_undef)
             XSRETURN_UNDEF;
@@ -353,7 +359,7 @@ void curl_easy_recv(SV *e_http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, IV
             XSRETURN_IV(0);
         SV *buf = newSV(max_sz);
         SvPOK_only(buf);
-        r = curl_easy_recv((CURL *)SvIV(SvRV(e_http)), SvPVX(buf), max_sz, &recv_sz);
+        r = curl_easy_recv((CURL *)THIS(e_http), SvPV_nolen(buf), max_sz, &recv_sz);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         buf = sv_2mortal(buf);
@@ -373,28 +379,28 @@ void curl_multi_init()
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void curl_multi_cleanup(SV *m_http=NULL)
+void curl_multi_cleanup(SV *m_http=&PL_sv_undef)
     PREINIT:
         int r = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        r = curl_multi_cleanup((CURLM *)SvIV(SvRV(m_http)));
+        r = curl_multi_cleanup((CURLM *)THIS(m_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         SvRV(m_http) = &PL_sv_undef;
         XSRETURN_IV(0);
 
-void curl_multi_wakeup(SV *m_http=NULL)
+void curl_multi_wakeup(SV *m_http=&PL_sv_undef)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        int r = curl_multi_wakeup((CURLM *)SvIV(SvRV(m_http)));
+        int r = curl_multi_wakeup((CURLM *)THIS(m_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
@@ -402,44 +408,45 @@ void curl_multi_wakeup(SV *m_http=NULL)
         croak("curl_multi_wakeup is not supported in this version of libcurl");
 #endif
 
-void curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
+void curl_multi_perform(SV *m_http=&PL_sv_undef, SV *running_handles=NULL)
     PREINIT:
         int r = 0;
+        int h = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        r = curl_multi_perform((CURLM *)SvIV(SvRV(m_http)), &r);
+        r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         if(running_handles != NULL && running_handles != &PL_sv_undef){
-            sv_setiv(running_handles, r);
+            sv_setiv(running_handles, h);
         }
         XSRETURN_IV(0);
 
-void curl_multi_add_handle(SV *m_http=NULL, SV *easy=NULL)
+void curl_multi_add_handle(SV *m_http=&PL_sv_undef, SV *e_http=&PL_sv_undef)
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        if(!easy || !SvROK(easy) || SvRV(easy) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        int r = curl_multi_add_handle((CURLM *)SvIV(SvRV(m_http)), (CURL *)SvIV(SvRV(easy)));
+        int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void curl_multi_remove_handle(SV *m_http=NULL, SV *easy=NULL)
+void curl_multi_remove_handle(SV *m_http=&PL_sv_undef, SV *easy=NULL)
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
         if(!easy || !SvROK(easy) || SvRV(easy) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        int r = curl_multi_remove_handle((CURLM *)SvIV(SvRV(m_http)), (CURL *)SvIV(SvRV(easy)));
+        int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(easy));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
@@ -453,15 +460,15 @@ void curl_multi_strerror(int code)
             XSRETURN_UNDEF;
         XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
-void curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
+void curl_multi_timeout(SV *m_http=&PL_sv_undef, SV *timeout = NULL)
     PREINIT:
         long l = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        int r = curl_multi_timeout((CURLM *)SvIV(SvRV(m_http)), &l);
+        int r = curl_multi_timeout((CURLM *)THIS(m_http), &l);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         if(timeout != NULL && timeout != &PL_sv_undef){
@@ -469,16 +476,16 @@ void curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
         }
         XSRETURN_IV(0);
 
-void curl_multi_info_read(SV *m_http=NULL)
+void curl_multi_info_read(SV *m_http=&PL_sv_undef)
     PREINIT:
         int r = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
         POPs;
-        CURLMsg *m = curl_multi_info_read((CURLM *)SvIV(SvRV(m_http)), &r);
+        CURLMsg *m = curl_multi_info_read((CURLM *)THIS(m_http), &r);
         if(!m)
             XSRETURN_UNDEF;
         SV *rv = sv_newmortal();
@@ -490,14 +497,14 @@ void curl_multi_info_read(SV *m_http=NULL)
         hv_store(rh, "easy_handle",11,newSVsv(rv)            ,0);
         XPUSHs(newRV((SV*)rh));
 
-void curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
+void curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
     PREINIT:
         int r = 0;
         void *_v = NULL;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
         if(!value || !SvOK(value))
             XSRETURN_UNDEF;
@@ -515,12 +522,12 @@ void curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
         } else {
             XSRETURN_UNDEF;
         }
-        r = curl_multi_setopt((CURLM *)SvIV(SvRV(m_http)), c_opt, _v);
+        r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _v);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void curl_multi_fdset(SV *m_http=NULL)
+void curl_multi_fdset(SV *m_http=&PL_sv_undef)
     PREINIT:
         fd_set r;
         fd_set w;
@@ -530,9 +537,9 @@ void curl_multi_fdset(SV *m_http=NULL)
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        rt = curl_multi_fdset((CURLM *)SvIV(SvRV(m_http)), &r, &w, &e, &max);
+        rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
         if(rt != CURLM_OK)
             XSRETURN_IV(rt);
         AV *re = (AV *)sv_2mortal((SV *)newAV());
@@ -550,16 +557,16 @@ void curl_multi_fdset(SV *m_http=NULL)
         XPUSHs(newRV_noinc((SV *)we));
         XPUSHs(newRV_noinc((SV *)ee));
 
-void curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
+void curl_multi_poll(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         int r = 0;
         int nfds = 0;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        r = curl_multi_poll((CURLM *)SvIV(SvRV(m_http)), NULL, 0, timeout, &nfds);
+        r = curl_multi_poll((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         if(numfds != NULL && numfds != &PL_sv_undef){
@@ -570,16 +577,16 @@ void curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, 
         croak("curl_multi_poll is not supported in this version of libcurl");
 #endif
 
-void curl_multi_wait(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
+void curl_multi_wait(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
     PREINIT:
         int r = 0;
         int nfds = 0;
     PPCODE:
         dTHX;
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        r = curl_multi_wait((CURLM *)SvIV(SvRV(m_http)), NULL, 0, timeout, &nfds);
+        r = curl_multi_wait((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         if(numfds != NULL && numfds != &PL_sv_undef){
@@ -587,15 +594,15 @@ void curl_multi_wait(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, 
         }
         XSRETURN_IV(0);
 
-void curl_multi_get_handles(SV *m_http=NULL)
+void curl_multi_get_handles(SV *m_http=&PL_sv_undef)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x080400)
         dSP;
-        if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
+        if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
         POPs;
-        CURL **e = curl_multi_get_handles((CURLM *)SvIV(SvRV(m_http)));
+        CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(!e)
             XSRETURN_UNDEF;
         AV *av = (AV*)sv_2mortal((SV*)newAV());

@@ -1,4 +1,4 @@
-use Test::More tests => 29;
+use Test::More tests => 30;
 use strict; use warnings;
 
 BEGIN {use_ok('utils::curl', qw())};
@@ -57,23 +57,21 @@ BEGIN {use_ok('utils::curl', qw())};
 }
 
 {
-    my ($r1, $r2, $r3, $r4, $r5, $re);
-    eval {
-        $r1 = http::curl_easy_init();
-        $r2 = http::curl_easy_setopt($r1, http::CURLOPT_URL(), "https://example.com");
-        $re = http::curl_easy_setopt($r1, http::CURLOPT_VERBOSE(), 0);
-        $r3 = http::curl_easy_perform($r1);
-        http::curl_easy_reset($r1);
-        $r5 = http::curl_easy_setopt($r1, http::CURLOPT_URL(), "https://example.com");
-        $r4 = http::curl_easy_perform($r1);
-        http::curl_easy_cleanup($r1);
-    };
-    is($@, '', 'http::curl_easy_perform(http) eval');
+    my $r1 = http::curl_easy_init();
+    is(ref($r1), 'http::curl::easy', 'http::curl_easy_init() return');
+    isnt($$r1, undef, 'http::curl_easy_init() return OK');
+    my $r2 = http::curl_easy_setopt($r1, http::CURLOPT_URL(), "https://example.com");
     is($r2, 0, 'http::curl_easy_setopt(http, CURLOPT_URL, "https://example.com") return ok');
+    my $re = http::curl_easy_setopt($r1, http::CURLOPT_VERBOSE(), 0);
     is($re, 0, 'http::curl_easy_setopt(http, CURLOPT_VERBOSE, 0) return ok');
+    my $r3 = http::curl_easy_perform($r1);
     is($r3, 0, 'http::curl_easy_perform(http) return ok');
+    http::curl_easy_reset($r1);
+    my $r5 = http::curl_easy_setopt($r1, http::CURLOPT_URL(), "https://example.com");
     is($r5, 0, 'http::curl_easy_setopt(http, CURLOPT_URL, "https://example.com") return ok');
+    my $r4 = http::curl_easy_perform($r1);
     is($r4, 0, 'http::curl_easy_perform(http) return ok');
+    http::curl_easy_cleanup($r1);
     is(http::CURLOPT_VERBOSE(), 41, 'http::CURLOPT_VERBOSE() return');
 }
 
