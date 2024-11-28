@@ -609,6 +609,6 @@ void curl_multi_get_handles(SV *m_http=NULL)
         curl_free(e);
         XPUSHs(sv_2mortal(newRV_noinc((SV *)av));
 #else
-        XSRETURN_EMPTY;
+        croak("curl_multi_get_handles is not supported in this version of libcurl");
 #endif
 
