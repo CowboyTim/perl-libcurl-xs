@@ -54,6 +54,7 @@ WriteMakefile(
     XSMULTI             => 1,
     LINKTYPE            => 'dynamic',
     BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
+    XSOPT               => '-noversioncheck',
     XS                  => {
         'lib/utils/curl.xs'           => 'lib/utils/curl.c',
         'lib/utils/curl_constants.xs' => 'lib/utils/curl_constants.c',
