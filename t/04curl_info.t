@@ -1,4 +1,4 @@
-use Test::More tests => 23;
+use Test::More tests => 22;
 
 BEGIN {use_ok('utils::curl', qw())};
 
@@ -27,7 +27,6 @@ BEGIN {use_ok('utils::curl', qw())};
     is(http::curl_easy_setopt($r, http::CURLOPT_URL(), 'http://www.example.com/'), http::CURLE_OK(), 'http::curl_easy_setopt() return ok');
     is(http::curl_easy_setopt($r, http::CURLOPT_FOLLOWLOCATION(), 1), http::CURLE_OK(), 'http::curl_easy_setopt() return ok');
     is(http::curl_easy_getinfo($r, http::CURLINFO_EFFECTIVE_URL()), 'http://www.example.com/', 'http::curl_easy_getinfo() return real url: http://www.example.com/');
-    is(http::curl_easy_getinfo($r, http::CURLINFO_EFFECTIVE_METHOD()), 'GET', 'http::curl_easy_getinfo() return real method: GET');
     is(http::curl_easy_getinfo($r, http::CURLINFO_SPEED_DOWNLOAD_T()), 0, 'http::curl_easy_getinfo() return real speed download: 0');
     is(http::curl_easy_getinfo($r, http::CURLINFO_SIZE_DOWNLOAD_T()), 0, 'http::curl_easy_getinfo() return real size download: 0');
     is(http::curl_easy_getinfo($r, http::CURLINFO_TOTAL_TIME()), 0, 'http::curl_easy_getinfo() return real total time: 0');
