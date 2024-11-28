@@ -21,6 +21,7 @@ push @c, $str =~ m/^\s*(CURLM_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLMOPT_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLMSG_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLPROXY_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/\((CURLOPT_(?:[A-Z_0-9]+)),/gms;
 my %uniq;
 @uniq{@c} = ();
 @c = sort keys %uniq;
