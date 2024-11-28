@@ -12,35 +12,6 @@ $ENV{LIBCURL_INCLUDE} ||= do {
     $inc_flags;
 };
 
-WriteMakefile(
-    NAME                => 'utils::curl',
-    VERSION             => '0.01',
-    LIBS                => ['-lcurl'],
-    CCFLAGS             => '-Wextra -Werror',
-    OPTIMIZE            => '-Os',
-    DEFINE              => '',
-    INC                 => "-I. -I$ENV{LIBCURL_INCLUDE}",
-    NO_META             => 1,
-    NO_MYMETA           => 1,
-    XSMULTI             => 1,
-    LINKTYPE            => 'dynamic',
-    XS                  => {
-        'lib/utils/curl.xs'           => 'lib/utils/curl.c',
-        'lib/utils/curl_constants.xs' => 'lib/utils/curl_constants.c',
-        'lib/utils/curl_common.xs'    => 'lib/utils/curl_common.c',
-    },
-    XSBUILD             => {
-        xs => {
-            'lib/utils' => {
-                DEFINE    => '-Dabc',
-                LIBS      => ['-lrt -ldefke'],
-                LDDLFLAGS => '-lrt',
-                LDFROM    => "lib/utils/curl\$(OBJ_EXT) -lrt",
-            }
-    }},
-    BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
-);
-
 print "Building curl constants for your libcurl version\n";
 open(my $c_fh, ">", "lib/utils/curl_constants.xs")
     or die "Can't create: $!\n";
@@ -69,6 +40,26 @@ foreach my $c (@c_consts) {
 print {$c_fh} <<'HERE';
 }
 HERE
+
+WriteMakefile(
+    NAME                => 'utils::curl',
+    VERSION             => '0.01',
+    LIBS                => ['-lcurl'],
+    CCFLAGS             => '-Wextra -Werror',
+    OPTIMIZE            => '-Os',
+    DEFINE              => '',
+    INC                 => "-I. -I$ENV{LIBCURL_INCLUDE}",
+    NO_META             => 1,
+    NO_MYMETA           => 1,
+    XSMULTI             => 1,
+    LINKTYPE            => 'dynamic',
+    BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
+    XS                  => {
+        'lib/utils/curl.xs'           => 'lib/utils/curl.c',
+        'lib/utils/curl_constants.xs' => 'lib/utils/curl_constants.c',
+        'lib/utils/curl_common.xs'    => 'lib/utils/curl_common.c',
+    },
+);
 
 package MY;
 sub test_via_harness {
