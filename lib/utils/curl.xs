@@ -96,7 +96,6 @@ void curl_easy_strerror(int code)
 void curl_easy_setopt(SV *e_http=&PL_sv_undef, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
         int r = 0;
-        void *_v = NULL;
     PPCODE:
         dTHX;
         dSP;
@@ -107,19 +106,21 @@ void curl_easy_setopt(SV *e_http=&PL_sv_undef, int c_opt=0, SV *value=&PL_sv_und
 
         //printf("p: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
-            _v = (long *)SvIV(value);
+            long _vl = (long)SvIV(value);
+            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             if(!SvPOK(value))
                 XSRETURN_UNDEF;
-            _v = (char *)SvPV_nolen(value);
+            char *_vc = (char *)SvPV_nolen(value);
+            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
             XSRETURN_UNDEF;
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
-            _v = (curl_off_t *)SvIV(value);
+            long _vo = (curl_off_t)SvIV(value);
+            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vo);
         } else {
             XSRETURN_UNDEF;
         }
-        r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _v);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
@@ -500,7 +501,6 @@ void curl_multi_info_read(SV *m_http=&PL_sv_undef)
 void curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
     PREINIT:
         int r = 0;
-        void *_v = NULL;
     PPCODE:
         dTHX;
         dSP;
@@ -510,19 +510,21 @@ void curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
             XSRETURN_UNDEF;
 
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
-            _v = (long *)SvIV(value);
+            long _vl = (long)SvIV(value);
+            r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vl);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             if(!SvPOK(value))
                 XSRETURN_UNDEF;
-            _v = (char *)SvPV_nolen(value);
+            char *_vc = (char *)SvPV_nolen(value);
+            r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vc);
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
             XSRETURN_UNDEF;
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
-            _v = (curl_off_t *)SvIV(value);
+            long _vb = (long)SvIV(value);
+            r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vb);
         } else {
             XSRETURN_UNDEF;
         }
-        r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _v);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
