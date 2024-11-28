@@ -594,20 +594,19 @@ void curl_multi_get_handles(SV *m_http=NULL)
         dSP;
         if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        CURLMcode r;
-        int n;
-        CURL **e = curl_multi_get_handles((CURLM *)SvIV(SvRV(m_http)), &n);
+        POPs;
+        CURL **e = curl_multi_get_handles((CURLM *)SvIV(SvRV(m_http)));
         if(!e)
             XSRETURN_UNDEF;
-        AV *av = newAV();
-        for(int i=0; i<n; i++){
+        AV *av = (AV*)sv_2mortal((SV*)newAV());
+        for(int i=0; e[i]; i++){
             SV *sv = sv_newmortal();
-            sv_setref_pv(sv, "m_http::curl::easy", (void *)e[i]);
+            sv_setref_pv(sv, "http::curl::easy", (void *)e[i]);
             SvREADONLY_on(sv);
             av_push(av, sv);
         }
         curl_free(e);
-        XPUSHs(sv_2mortal(newRV_noinc((SV *)av));
+        XPUSHs(newRV_noinc((SV *)av));
 #else
         croak("curl_multi_get_handles is not supported in this version of libcurl");
 #endif

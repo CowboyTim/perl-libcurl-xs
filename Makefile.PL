@@ -1,5 +1,15 @@
 use ExtUtils::MakeMaker;
 
+$ENV{LIBCURL_INCLUDE} ||= do {
+    my $inc_flags = `pkg-config libcurl --cflags-only-I`;
+    chomp $inc_flags;
+    if(!$inc_flags){
+        die "No libcurl installed according to `pkg-config libcurl`";
+    }
+    $inc_flags =~ s/^-I//;
+    $inc_flags;
+};
+
 WriteMakefile(
     NAME                => 'utils::curl',
     VERSION             => '0.01',
@@ -7,7 +17,7 @@ WriteMakefile(
     CCFLAGS             => '-Wextra -Werror',
     OPTIMIZE            => '-Os',
     DEFINE              => '',
-    INC                 => '-I.',
+    INC                 => "-I. -I$ENV{LIBCURL_INCLUDE}",
     NO_META             => 1,
     NO_MYMETA           => 1,
     XSMULTI             => 1,
@@ -49,7 +59,9 @@ BOOT:
 {
 HV *stash = gv_stashpv("http", 0);
 HERE
-foreach my $c (do './curl_constants.pl'){
+my @c_consts = do './curl_constants.pl';
+die $@ if $@;
+foreach my $c (@c_consts) {
     print {$c_fh} "newCONSTSUB(stash, \"$c\", newSViv($c));\n";
 }
 print {$c_fh} <<'HERE';

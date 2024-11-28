@@ -1,9 +1,7 @@
 use strict; use warnings;
 my @c;
 # read in CURLE_ enum constants from the curl.h header file
-my $inc_flags = `pkg-config libcurl --cflags-only-I`;
-chomp $inc_flags;
-$inc_flags =~ s/^-I//;
+my $inc_flags = $ENV{LIBCURL_INCLUDE} || die "LIBCURL_INCLUDE not set";
 my $str = '';
 for my $f (qw(curl/curl.h curl/multi.h curl/easy.h)){
     my $curl_h = "$inc_flags/$f";
