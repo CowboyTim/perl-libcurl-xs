@@ -35,8 +35,16 @@ BOOT:
         newCONSTSUB(stash, "CURL_WAIT_POLLOUT"          , newSViv(CURL_WAIT_POLLOUT));
         newCONSTSUB(stash, "CURL_PUSH_OK"               , newSViv(CURL_PUSH_OK));
         newCONSTSUB(stash, "CURL_PUSH_DENY"             , newSViv(CURL_PUSH_DENY));
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         newCONSTSUB(stash, "CURL_PUSH_ERROROUT"         , newSViv(CURL_PUSH_ERROROUT));
+#else
+        newCONSTSUB(stash, "CURL_PUSH_ERROROUT"         , newSViv(2));
+#endif
 }
+
+#ifndef CURLOPTTYPE_BLOB
+#define CURLOPTTYPE_BLOB 40000
+#endif
 
 void curl_easy_init()
     PPCODE:
@@ -113,6 +121,7 @@ void curl_easy_setopt(SV *e_http=NULL, IV c_opt=0, SV *value=NULL)
 void curl_easy_option_by_name(...)
     PPCODE:
         dTHX;
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         SV *name = POPs;
         if(!name || !SvPOK(name))
@@ -127,10 +136,14 @@ void curl_easy_option_by_name(...)
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
         XPUSHs(newRV_inc((SV *)rh));
+#else
+        croak("curl_easy_option_by_name is not supported in this version of libcurl");
+#endif
 
-void curl_easy_getinfo_by_id(...)
+void curl_easy_option_by_id(...)
     PPCODE:
         dTHX;
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         SV *id = POPs;
         if(!id || !SvPOK(id))
@@ -144,6 +157,9 @@ void curl_easy_getinfo_by_id(...)
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
         XPUSHs(newRV_inc((SV *)rh));
+#else
+        croak("curl_easy_option_by_id is not supported in this version of libcurl");
+#endif
 
 void curl_easy_perform(SV *e_http=NULL)
     PREINIT:
@@ -293,6 +309,7 @@ void curl_easy_upkeep(SV *e_http=NULL)
         int r = 0;
     PPCODE:
         dTHX;
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
@@ -300,6 +317,9 @@ void curl_easy_upkeep(SV *e_http=NULL)
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
+#else
+        croak("curl_easy_upkeep is not supported in this version of libcurl");
+#endif
 
 void curl_easy_send(SV *e_http=(SV*)&PL_sv_undef, SV *data=(SV*)&PL_sv_undef, )
     PREINIT:
@@ -370,6 +390,7 @@ void curl_multi_cleanup(SV *m_http=NULL)
 void curl_multi_wakeup(SV *m_http=NULL)
     PPCODE:
         dTHX;
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
@@ -377,6 +398,9 @@ void curl_multi_wakeup(SV *m_http=NULL)
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
+#else
+        croak("curl_multi_wakeup is not supported in this version of libcurl");
+#endif
 
 void curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
     PREINIT:
@@ -527,12 +551,12 @@ void curl_multi_fdset(SV *m_http=NULL)
         XPUSHs(newRV_noinc((SV *)ee));
 
 void curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
-    PREINIT:
-        int r = 0;
-        int nfds = 0;
     PPCODE:
         dTHX;
+#if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
+        int r = 0;
+        int nfds = 0;
         if(!m_http || !SvROK(m_http) || SvRV(m_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
         r = curl_multi_poll((CURLM *)SvIV(SvRV(m_http)), NULL, 0, timeout, &nfds);
@@ -542,6 +566,9 @@ void curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, 
             sv_setiv(numfds, nfds);
         }
         XSRETURN_IV(0);
+#else
+        croak("curl_multi_poll is not supported in this version of libcurl");
+#endif
 
 void curl_multi_wait(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
     PREINIT:
