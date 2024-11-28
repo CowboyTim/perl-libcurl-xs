@@ -3,7 +3,6 @@ package utils::curl;
 use strict; use warnings;
 
 our $VERSION    = '0.01';
-our $XS_VERSION = '0.01';
 
 require DynaLoader;
 DynaLoader::bootstrap('utils::curl', $VERSION);

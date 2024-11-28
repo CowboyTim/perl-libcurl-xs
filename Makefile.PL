@@ -46,16 +46,15 @@ HERE
 
 WriteMakefile(
     NAME                => 'utils::curl',
-    VERSION             => '0.01',
+    VERSION_FROM        => 'lib/utils/curl.pm',
     LIBS                => ['-lcurl'],
     CCFLAGS             => '-Wextra -Werror',
     OPTIMIZE            => '-Os',
-    DEFINE              => '',
+    DEFINE              => '-UXS_APIVERSION_BOOTCHECK -UXS_VERSION_BOOTCHECK',
     INC                 => "-I. -I$ENV{LIBCURL_INCLUDE}",
     NO_META             => 1,
     NO_MYMETA           => 1,
     XSMULTI             => 1,
-    LINKTYPE            => 'dynamic',
     BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
     XS                  => {
         'lib/utils/curl.xs'           => 'lib/utils/curl.c',
