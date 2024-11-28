@@ -64,7 +64,11 @@ void curl_getdate(...)
 
 void curl_version_info(...)
     PREINIT:
+#if (LIBCURL_VERSION_NUM <= 0x073d01)
+        curl_version_info_data *vi = NULL;
+#else
         struct curl_version_info_data *vi = NULL;
+#endif
         HV *rh = NULL;
     PPCODE:
         dTHX;
