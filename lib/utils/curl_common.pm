@@ -1,6 +1,6 @@
 package utils::curl_common;
 
-our $VERSION    = '0.01';
+our $VERSION = '0.1';
 
 require DynaLoader;
 DynaLoader::bootstrap(__PACKAGE__, $VERSION);
