@@ -49,7 +49,9 @@ BOOT:
 #else
         newCONSTSUB(stash, "CURL_PUSH_ERROROUT"         , newSViv(2));
 #endif
-        curl_global_init(CURL_GLOBAL_DEFAULT);
+        int r = curl_global_init(CURL_GLOBAL_DEFAULT);
+        if(r != 0)
+            croak("curl_global_init failed: %d", r);
 }
 
 #ifndef CURLOPTTYPE_BLOB
