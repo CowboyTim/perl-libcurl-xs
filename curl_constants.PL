@@ -1,7 +1,16 @@
 use strict; use warnings;
+my $ofn = shift @ARGV || "curl_constants.xsh";
 my @c;
 # read in CURLE_ enum constants from the curl.h header file
-my $inc_flags = $ENV{LIBCURL_INCLUDE} || die "LIBCURL_INCLUDE not set";
+my $inc_flags = $ENV{LIBCURL_INCLUDE} ||= do {
+    my $inc_flags = `pkg-config libcurl --cflags-only-I`;
+    chomp $inc_flags;
+    if(!$inc_flags){
+        die "No libcurl installed according to `pkg-config libcurl`";
+    }
+    $inc_flags =~ s/^-I//;
+    $inc_flags;
+};
 my $str = '';
 for my $f (qw(curl/curl.h curl/multi.h curl/easy.h)){
     my $curl_h = "$inc_flags/$f";
@@ -27,4 +36,20 @@ push @c, map {"CURLOPT_$_"} ($n_str =~ m/ CINIT\(([A-Z0-9_]+),.*?\)/gms);
 my %uniq;
 @uniq{@c} = ();
 @c = sort keys %uniq;
-@c;
+
+print "Building curl constants for your libcurl version\n";
+open(my $c_fh, ">", $ofn)
+    or die "Can't create: $!\n";
+print {$c_fh} <<'HERE';
+BOOT:
+{
+HV *stash = gv_stashpv("http", 0);
+HERE
+foreach my $c (@c) {
+    print {$c_fh} "newCONSTSUB(stash, \"$c\", newSViv($c));\n";
+}
+print {$c_fh} <<'HERE';
+}
+HERE
+
+1;

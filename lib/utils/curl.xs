@@ -54,6 +54,8 @@ BOOT:
             croak("curl_global_init failed: %d", r);
 }
 
+INCLUDE: ../../curl_constants.xsh
+
 #ifndef CURLOPTTYPE_BLOB
 #define CURLOPTTYPE_BLOB 40000
 #endif

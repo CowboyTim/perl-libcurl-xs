@@ -2,7 +2,7 @@ package utils::curl;
 
 use strict; use warnings;
 
-our $VERSION    = '0.1';
+our $VERSION = '0.1';
 
 require DynaLoader;
 DynaLoader::bootstrap('utils::curl', $VERSION);
@@ -25,8 +25,6 @@ sub AUTOLOAD {
     $c_name =~ s/.*:://;
     if($c_name =~ m/^(?:CURLE|CURLINFO|CURLPROXY|CURLM|CURLMOPT|CURLMSG)_(?:.*)$/){
         no strict 'refs';
-        require utils::curl_constants;
-        DynaLoader::bootstrap('utils::curl_constants', '0.01');
         unless(UNIVERSAL::can("http",$c_name)){
             my @cl = caller(0);
             die "Undefined subroutine &${cl[0]}::$c_name called at $cl[1] line $cl[2].\n";
@@ -40,8 +38,6 @@ sub AUTOLOAD {
             return $opt->{id} if defined $opt;
         }
         no strict 'refs';
-        require utils::curl_constants;
-        DynaLoader::bootstrap('utils::curl_constants', '0.01');
         unless(UNIVERSAL::can("http",$c_name)){
             my @cl = caller(0);
             die "Undefined subroutine &${cl[0]}::$c_name called at $cl[1] line $cl[2].\n";
