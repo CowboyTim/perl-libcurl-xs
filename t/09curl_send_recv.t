@@ -1,6 +1,8 @@
 use Test::More tests => 23;
-
 use strict; use warnings;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
 
 use_ok('utils::curl');
 

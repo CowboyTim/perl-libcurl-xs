@@ -1,8 +1,10 @@
 use Test::More tests => 31;
-
 use strict; use warnings;
 
-BEGIN {use_ok('utils::curl', qw())};
+use FindBin;
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
+
+use_ok('utils::curl', qw());
 
 {
     my $r1 = http::curl_easy_init();

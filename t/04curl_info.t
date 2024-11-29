@@ -1,6 +1,10 @@
 use Test::More tests => 22;
+use strict; use warnings;
 
-BEGIN {use_ok('utils::curl', qw())};
+use FindBin;
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
+
+use_ok('utils::curl', qw());
 
 {
     my $r = eval {
