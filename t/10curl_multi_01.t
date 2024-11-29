@@ -124,5 +124,5 @@ use_ok('utils::curl');
     is_deeply($ri4, undef, 'http::curl_multi_info_read(): return value ok');
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
-    is($r, undef, 'http::curl_multi_init(): return value ok');
+    is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');
 }
