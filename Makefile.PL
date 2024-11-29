@@ -59,7 +59,6 @@ WriteMakefile(
     XS                  => {
         'lib/utils/curl.xs'           => 'lib/utils/curl.c',
         'lib/utils/curl_constants.xs' => 'lib/utils/curl_constants.c',
-        'lib/utils/curl_common.xs'    => 'lib/utils/curl_common.c',
     },
 );
 

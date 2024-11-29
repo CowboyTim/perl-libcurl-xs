@@ -23,16 +23,6 @@ sub AUTOLOAD {
     my (@a_args) = @_;
     my $c_name = $AUTOLOAD;
     $c_name =~ s/.*:://;
-    if($c_name =~ m/^curl_version|curl_version_info|curl_getdate|global_(init|cleanup|trace)$/){
-        no strict 'refs';
-        require utils::curl_common;
-        DynaLoader::bootstrap('utils::curl_common', '0.01');
-        unless(UNIVERSAL::can("http",$c_name)){
-            my @cl = caller(0);
-            die "Undefined subroutine &${cl[0]}::$c_name called at $cl[1] line $cl[2].\n";
-        }
-        return &{"http::$c_name"}(@a_args);
-    }
     if($c_name =~ m/^(?:CURLE|CURLINFO|CURLPROXY|CURLM|CURLMOPT|CURLMSG)_(?:.*)$/){
         no strict 'refs';
         require utils::curl_constants;
