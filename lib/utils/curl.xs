@@ -163,7 +163,7 @@ void L_curl_easy_init()
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void L_curl_easy_cleanup(SV *e_http=&PL_sv_undef)
+void L_curl_easy_cleanup(SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -174,7 +174,7 @@ void L_curl_easy_cleanup(SV *e_http=&PL_sv_undef)
         sv_setref_pv(e_http, NULL, NULL);
         XSRETURN_UNDEF;
 
-void L_curl_easy_reset(SV *e_http=&PL_sv_undef)
+void L_curl_easy_reset(SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -192,7 +192,7 @@ void L_curl_easy_strerror(int code)
             XSRETURN_UNDEF;
         XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
-void L_curl_easy_setopt(SV *e_http=&PL_sv_undef, int c_opt=0, SV *value=&PL_sv_undef)
+void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -267,7 +267,7 @@ void L_curl_easy_option_by_id(...)
         croak("curl_easy_option_by_id is not supported in this version of libcurl");
 #endif
 
-void L_curl_easy_perform(SV *e_http=&PL_sv_undef)
+void L_curl_easy_perform(SV *e_http=NULL)
     PREINIT:
         int r;
     PPCODE:
@@ -280,7 +280,7 @@ void L_curl_easy_perform(SV *e_http=&PL_sv_undef)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void L_curl_easy_duphandle(SV *e_http=&PL_sv_undef)
+void L_curl_easy_duphandle(SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -348,7 +348,7 @@ void L_curl_easy_unescape(...)
         curl_free(s);
         XPUSHs(sv);
 
-void L_curl_easy_getinfo(SV *e_http=&PL_sv_undef, int c_info=0)
+void L_curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
     PREINIT:
         long l = 0;
         curl_off_t o = 0;
@@ -397,7 +397,7 @@ void L_curl_easy_getinfo(SV *e_http=&PL_sv_undef, int c_info=0)
             XSRETURN_UNDEF;
         }
 
-void L_curl_easy_pause(SV *e_http=&PL_sv_undef, int bitmask=0)
+void L_curl_easy_pause(SV *e_http=NULL, int bitmask=0)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -410,7 +410,7 @@ void L_curl_easy_pause(SV *e_http=&PL_sv_undef, int bitmask=0)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void L_curl_easy_upkeep(SV *e_http=&PL_sv_undef)
+void L_curl_easy_upkeep(SV *e_http=NULL)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -427,7 +427,7 @@ void L_curl_easy_upkeep(SV *e_http=&PL_sv_undef)
         croak("curl_easy_upkeep is not supported in this version of libcurl");
 #endif
 
-void L_curl_easy_send(SV *e_http=&PL_sv_undef, SV *data=&PL_sv_undef, )
+void L_curl_easy_send(SV *e_http=NULL, SV *data=&PL_sv_undef, )
     PREINIT:
         int r = 0;
         size_t sent_sz = 0;
@@ -444,7 +444,7 @@ void L_curl_easy_send(SV *e_http=&PL_sv_undef, SV *data=&PL_sv_undef, )
         //printf("data: %s %d\n", SvPV_nolen(data), sent_sz);
         XSRETURN_IV(0);
 
-void L_curl_easy_recv(SV *e_http=&PL_sv_undef, SV *data=&PL_sv_undef, IV max_sz=0)
+void L_curl_easy_recv(SV *e_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0)
     PREINIT:
         int r = 0;
         size_t recv_sz = 0;
@@ -492,7 +492,7 @@ void L_curl_multi_cleanup(SV *m_http=NULL)
         sv_setref_pv(m_http, NULL, NULL);
         XSRETURN_IV(0);
 
-void L_curl_multi_wakeup(SV *m_http=&PL_sv_undef)
+void L_curl_multi_wakeup(SV *m_http=NULL)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
@@ -505,7 +505,7 @@ void L_curl_multi_wakeup(SV *m_http=&PL_sv_undef)
         croak("curl_multi_wakeup is not supported in this version of libcurl");
 #endif
 
-void L_curl_multi_perform(SV *m_http=&PL_sv_undef, SV *running_handles=NULL)
+void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
     PREINIT:
         int r = 0;
         int h = 0;
@@ -517,12 +517,12 @@ void L_curl_multi_perform(SV *m_http=&PL_sv_undef, SV *running_handles=NULL)
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(running_handles != NULL && running_handles != &PL_sv_undef){
+        if(running_handles != NULL){
             sv_setiv(running_handles, h);
         }
         XSRETURN_IV(r);
 
-void L_curl_multi_add_handle(SV *m_http=&PL_sv_undef, SV *e_http=&PL_sv_undef)
+void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -533,7 +533,7 @@ void L_curl_multi_add_handle(SV *m_http=&PL_sv_undef, SV *e_http=&PL_sv_undef)
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         XSRETURN_IV(r);
 
-void L_curl_multi_remove_handle(SV *m_http=&PL_sv_undef, SV *easy=NULL)
+void L_curl_multi_remove_handle(SV *m_http=NULL, SV *easy=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -553,7 +553,7 @@ void L_curl_multi_strerror(int code)
             XSRETURN_UNDEF;
         XPUSHs(sv_2mortal(newSVpv(s, 0)));
 
-void L_curl_multi_timeout(SV *m_http=&PL_sv_undef, SV *timeout = NULL)
+void L_curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
     PREINIT:
         long l = 0;
     PPCODE:
@@ -564,12 +564,12 @@ void L_curl_multi_timeout(SV *m_http=&PL_sv_undef, SV *timeout = NULL)
         int r = curl_multi_timeout((CURLM *)THIS(m_http), &l);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(timeout != NULL && timeout != &PL_sv_undef){
+        if(timeout != NULL){
             sv_setiv(timeout, l);
         }
         XSRETURN_IV(r);
 
-void L_curl_multi_info_read(SV *m_http=&PL_sv_undef)
+void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -577,8 +577,10 @@ void L_curl_multi_info_read(SV *m_http=&PL_sv_undef)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        POPs;
         CURLMsg *m = curl_multi_info_read((CURLM *)THIS(m_http), &r);
+        if(msgs_in_queue != NULL){
+            sv_setiv(msgs_in_queue, r);
+        }
         if(!m)
             XSRETURN_UNDEF;
         HV *rh = (HV*)sv_2mortal((SV*)newHV());
@@ -586,7 +588,7 @@ void L_curl_multi_info_read(SV *m_http=&PL_sv_undef)
         hv_store(rh, "result",6,newSViv(m->data.result),0);
         XPUSHs(newRV((SV*)rh));
 
-void L_curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
+void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -615,7 +617,7 @@ void L_curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
         }
         XSRETURN_IV(r);
 
-void L_curl_multi_fdset(SV *m_http=&PL_sv_undef)
+void L_curl_multi_fdset(SV *m_http=NULL)
     PREINIT:
         fd_set r;
         fd_set w;
@@ -645,7 +647,7 @@ void L_curl_multi_fdset(SV *m_http=&PL_sv_undef)
         XPUSHs(newRV_noinc((SV *)we));
         XPUSHs(newRV_noinc((SV *)ee));
 
-void L_curl_multi_poll(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
+void L_curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=NULL)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
@@ -657,7 +659,7 @@ void L_curl_multi_poll(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int t
         r = curl_multi_poll((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(numfds != NULL && numfds != &PL_sv_undef){
+        if(numfds != NULL){
             sv_setiv(numfds, nfds);
         }
         XSRETURN_IV(r);
@@ -665,7 +667,7 @@ void L_curl_multi_poll(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int t
         croak("curl_multi_poll is not supported in this version of libcurl");
 #endif
 
-void L_curl_multi_wait(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=&PL_sv_undef)
+void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=NULL)
     PREINIT:
         int r = 0;
         int nfds = 0;
@@ -677,12 +679,12 @@ void L_curl_multi_wait(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int t
         r = curl_multi_wait((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(numfds != NULL && numfds != &PL_sv_undef){
+        if(numfds != NULL){
             sv_setiv(numfds, nfds);
         }
         XSRETURN_IV(r);
 
-void L_curl_multi_get_handles(SV *m_http=&PL_sv_undef)
+void L_curl_multi_get_handles(SV *m_http=NULL)
     PPCODE:
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x080400)
@@ -712,7 +714,7 @@ MODULE = utils::curl                PACKAGE = http::curl::multi             PREF
 VERSIONCHECK: DISABLE
 PROTOTYPES: DISABLE
 
-void M_DESTROY(SV *m_http=&PL_sv_undef)
+void M_DESTROY(SV *m_http=NULL)
     PPCODE:
         dTHX;
         dSP;
@@ -742,12 +744,12 @@ MODULE = utils::curl                PACKAGE = http::curl::easy             PREFI
 VERSIONCHECK: DISABLE
 PROTOTYPES: DISABLE
 
-void E_DESTROY(SV *e_http=&PL_sv_undef)
+void E_DESTROY(SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        printf("destroy_easy: %p\n", (CURL *)THIS(e_http));
+        //printf("destroy_easy: %p\n", (CURL *)THIS(e_http));
         curl_easy_cleanup((CURL *)THIS(e_http));
         XSRETURN_YES;
