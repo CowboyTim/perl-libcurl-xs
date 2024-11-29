@@ -14,11 +14,13 @@ $ENV{LIBCURL_INCLUDE} ||= do {
 
 do './curl_constants.PL' or die $?;
 
+use Config;
+
 WriteMakefile(
     NAME                => 'utils::curl',
     VERSION_FROM        => 'lib/utils/curl.pm',
     LIBS                => ['-lcurl'],
-    CCFLAGS             => '-Wextra -Werror',
+    CCFLAGS             => "$Config{ccflags} -Wextra -Werror",
     OPTIMIZE            => '-Os',
     MAN1PODS            => {},
     MAN3PODS            => {},
