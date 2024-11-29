@@ -491,7 +491,7 @@ void curl_multi_cleanup(SV *m_http=&PL_sv_undef)
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         SvRV(m_http) = &PL_sv_undef;
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_wakeup(SV *m_http=&PL_sv_undef)
     PPCODE:
@@ -501,9 +501,7 @@ void curl_multi_wakeup(SV *m_http=&PL_sv_undef)
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
         int r = curl_multi_wakeup((CURLM *)THIS(m_http));
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 #else
         croak("curl_multi_wakeup is not supported in this version of libcurl");
 #endif
@@ -523,7 +521,7 @@ void curl_multi_perform(SV *m_http=&PL_sv_undef, SV *running_handles=NULL)
         if(running_handles != NULL && running_handles != &PL_sv_undef){
             sv_setiv(running_handles, h);
         }
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_add_handle(SV *m_http=&PL_sv_undef, SV *e_http=&PL_sv_undef)
     PPCODE:
@@ -534,9 +532,7 @@ void curl_multi_add_handle(SV *m_http=&PL_sv_undef, SV *e_http=&PL_sv_undef)
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_remove_handle(SV *m_http=&PL_sv_undef, SV *easy=NULL)
     PPCODE:
@@ -547,9 +543,7 @@ void curl_multi_remove_handle(SV *m_http=&PL_sv_undef, SV *easy=NULL)
         if(!easy || !SvROK(easy) || SvRV(easy) == &PL_sv_undef)
             XSRETURN_UNDEF;
         int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(easy));
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_strerror(int code)
     PPCODE:
@@ -574,7 +568,7 @@ void curl_multi_timeout(SV *m_http=&PL_sv_undef, SV *timeout = NULL)
         if(timeout != NULL && timeout != &PL_sv_undef){
             sv_setiv(timeout, l);
         }
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_info_read(SV *m_http=&PL_sv_undef)
     PREINIT:
@@ -624,9 +618,7 @@ void curl_multi_setopt(SV *m_http=&PL_sv_undef, IV c_opt=0, SV *value=NULL)
         } else {
             XSRETURN_UNDEF;
         }
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_fdset(SV *m_http=&PL_sv_undef)
     PREINIT:
@@ -673,7 +665,7 @@ void curl_multi_poll(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int tim
         if(numfds != NULL && numfds != &PL_sv_undef){
             sv_setiv(numfds, nfds);
         }
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 #else
         croak("curl_multi_poll is not supported in this version of libcurl");
 #endif
@@ -693,7 +685,7 @@ void curl_multi_wait(SV *m_http=&PL_sv_undef, SV *extrafds=&PL_sv_undef, int tim
         if(numfds != NULL && numfds != &PL_sv_undef){
             sv_setiv(numfds, nfds);
         }
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 
 void curl_multi_get_handles(SV *m_http=&PL_sv_undef)
     PPCODE:
