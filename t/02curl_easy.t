@@ -1,4 +1,4 @@
-use Test::More tests => 30;
+use Test::More tests => 27;
 use strict; use warnings;
 
 use FindBin;
@@ -37,19 +37,16 @@ use_ok('utils::curl', qw());
 }
 
 {
-    my $r = eval {
-        my $r1 = http::curl_easy_init();
-        is(ref($r1), 'http::curl::easy', 'http::curl_easy_init() return');
-        ok(defined $r1, 'http::curl_easy_init() return defined');
-        ok(defined $$r1, 'http::curl_easy_init() return defined');
-        http::curl_easy_cleanup($r1);
-        is(ref($r1), 'SCALAR', 'http::curl_easy_init() return');
-        ok(defined $r1, 'http::curl_easy_init() return defined');
-        ok(!defined $$r1, 'http::curl_easy_init() return defined');
-        http::curl_easy_cleanup($r1);
-    };
-    is($r, undef, 'http::curl_easy_cleanup(http) return x2');
-    is($@, '', 'http::curl_easy_cleanup(http) eval x2');
+    my $r1 = http::curl_easy_init();
+    is(ref($r1), 'http::curl::easy', 'http::curl_easy_init() return');
+    ok(defined $r1, 'http::curl_easy_init() return defined');
+    ok(defined $$r1, 'http::curl_easy_init() return defined');
+    http::curl_easy_cleanup($r1);
+    is($r1, undef, 'http::curl_easy_cleanup(http) return undef');
+    http::curl_easy_cleanup($r1);
+    my $r3 = undef;
+    http::curl_easy_cleanup($r3);
+    is($r3, undef, 'http::curl_easy_cleanup(http) return x1');
 }
 
 {

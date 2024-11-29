@@ -1,4 +1,4 @@
-use Test::More tests => 46;
+use Test::More tests => 43;
 use strict; use warnings;
 
 use Data::Dumper;
@@ -15,9 +15,10 @@ use_ok('utils::curl');
 
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
-    isnt($r, undef, 'http::curl_multi_init(): return ok');
-    is(ref($r), 'SCALAR', 'http::curl_multi_init(): return type ok');
-    is($$r, undef, 'http::curl_multi_init(): return value ok');
+    is($r, undef, 'http::curl_multi_init(): return ok');
+    # test for DESTROY
+    $r = undef;
+    is($r, undef, 'http::curl_multi_cleanup(): DESTROY');
 }
 
 {
@@ -57,9 +58,10 @@ use_ok('utils::curl');
 
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
-    isnt($r, undef, 'http::curl_multi_init(): return ok');
-    is(ref($r), 'SCALAR', 'http::curl_multi_init(): return type ok');
-    is($$r, undef, 'http::curl_multi_init(): return value ok');
+    is($r, undef, 'http::curl_multi_init(): return value ok');
+    # test for DESTROY
+    $r = undef;
+    is($r, undef, 'http::curl_multi_cleanup(): DESTROY');
 }
 
 {
@@ -83,6 +85,10 @@ use_ok('utils::curl');
     is($rt2, http::CURLM_OK(), 'http::curl_multi_perform(): return value ok');
     my $ri3 = http::curl_multi_info_read($r);
     is($ri3, undef,'http::curl_multi_info_read(): return value ok') or do {diag(Dumper($ri3)); diag(Dumper($s));};
+
+    # test for DESTROY
+    $r = undef;
+    is($r, undef, 'http::curl_multi_cleanup(): DESTROY');
 }
 
 {
@@ -118,7 +124,5 @@ use_ok('utils::curl');
     is_deeply($ri4, undef, 'http::curl_multi_info_read(): return value ok');
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
-    isnt($r, undef, 'http::curl_multi_init(): return ok');
-    is(ref($r), 'SCALAR', 'http::curl_multi_init(): return type ok');
-    is($$r, undef, 'http::curl_multi_init(): return value ok');
+    is($r, undef, 'http::curl_multi_init(): return value ok');
 }

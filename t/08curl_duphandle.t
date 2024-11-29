@@ -1,4 +1,4 @@
-use Test::More tests => 31;
+use Test::More tests => 26;
 use strict; use warnings;
 
 use FindBin;
@@ -25,18 +25,14 @@ use_ok('utils::curl', qw());
     is($r6, 0, 'http::curl_easy_perform() return: 0: OK');
 
     http::curl_easy_cleanup($r2);
-    is(ref($r2), 'SCALAR', 'http::curl_easy_cleanup() cleanup R2 REF');
-    is($$r2, undef, 'http::curl_easy_cleanup() cleanup R2 VALUE');
+    is($r2, undef, 'http::curl_easy_cleanup() cleanup R2');
     http::curl_easy_cleanup($r2);
-    is(ref($r2), 'SCALAR', 'http::curl_easy_cleanup() cleanup R2 REF BIS');
-    is($$r2, undef, 'http::curl_easy_cleanup() cleanup R2 VALUE BIS');
+    is($r2, undef, 'http::curl_easy_cleanup() cleanup R2');
 
     http::curl_easy_cleanup($r1);
-    is(ref($r2), 'SCALAR', 'http::curl_easy_cleanup() cleanup R1 REF BIS');
-    is($$r2, undef, 'http::curl_easy_cleanup() cleanup R1 VALUE BIS');
+    is($r1, undef, 'http::curl_easy_cleanup() cleanup R1');
     http::curl_easy_cleanup($r1);
-    is(ref($r2), 'SCALAR', 'http::curl_easy_cleanup() cleanup R1 REF BIS');
-    is($$r2, undef, 'http::curl_easy_cleanup() cleanup R1 VALUE BIS');
+    is($r1, undef, 'http::curl_easy_cleanup() cleanup R1');
 }
 
 {
@@ -73,6 +69,5 @@ use_ok('utils::curl', qw());
     my $r3 = http::curl_easy_perform($r1);
     is($r3, 0, 'http::curl_easy_perform() R1: OK');
     http::curl_easy_cleanup($r1);
-    is(ref($r1), 'SCALAR', 'http::curl_easy_cleanup() cleanup R1 REF');
-    is($$r1, undef, 'http::curl_easy_cleanup() cleanup R1 VALUE');
+    is($r1, undef, 'http::curl_easy_cleanup() cleanup R1');
 }

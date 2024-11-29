@@ -168,17 +168,17 @@ void curl_easy_cleanup(SV *e_http=&PL_sv_undef)
         dTHX;
         dSP;
         POPs;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        curl_easy_cleanup((CURL *)THIS(e_http));
-        SvRV(e_http) = &PL_sv_undef;
+        //printf("e: %p\n", (CURL *)THIS(e_http));
+        sv_setref_pv(e_http, NULL, NULL);
         XSRETURN_UNDEF;
 
 void curl_easy_reset(SV *e_http=&PL_sv_undef)
     PPCODE:
         dTHX;
         dSP;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         curl_easy_reset((CURL *)THIS(e_http));
         XSRETURN_UNDEF;
@@ -479,7 +479,7 @@ void curl_multi_init()
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void curl_multi_cleanup(SV *m_http=&PL_sv_undef)
+void curl_multi_cleanup(SV *m_http=NULL)
     PREINIT:
         int r = 0;
     PPCODE:
@@ -487,11 +487,10 @@ void curl_multi_cleanup(SV *m_http=&PL_sv_undef)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        r = curl_multi_cleanup((CURLM *)THIS(m_http));
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
-        SvRV(m_http) = &PL_sv_undef;
-        XSRETURN_IV(r);
+        //printf("m: %p\n", (CURLM *)THIS(m_http));
+        // go via DESTROY, as we have to destroy SV's too
+        sv_setref_pv(m_http, NULL, NULL);
+        XSRETURN_IV(0);
 
 void curl_multi_wakeup(SV *m_http=&PL_sv_undef)
     PPCODE:
@@ -711,3 +710,47 @@ void curl_multi_get_handles(SV *m_http=&PL_sv_undef)
         croak("curl_multi_get_handles is not supported in this version of libcurl");
 #endif
 
+
+MODULE = utils::curl                PACKAGE = http::curl::multi
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+void DESTROY(SV *m_http=&PL_sv_undef)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(m_http))
+            XSRETURN_UNDEF;
+        //printf("d: %p\n", (CURLM *)THIS(m_http));
+        // get all handles and remove them
+#if (LIBCURL_VERSION_NUM >= 0x080400)
+        CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
+        if(e){
+            for(int i=0; e[i]; i++){
+                curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)e[i]);
+            }
+            curl_easy_cleanup((CURL *)THIS(m_http));
+        }
+#endif
+        int r = curl_multi_cleanup((CURLM *)THIS(m_http));
+        if(r != CURLM_OK){
+            warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), (CURLM *)THIS(m_http));
+            XSRETURN_NO;
+        }
+        //printf("p: %p\n", (CURLM *)THIS(m_http));
+        XSRETURN_YES;
+
+MODULE = utils::curl                PACKAGE = http::curl::easy
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+void DESTROY(SV *e_http=&PL_sv_undef)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(e_http))
+            XSRETURN_UNDEF;
+        curl_easy_cleanup((CURL *)THIS(e_http));
+        XSRETURN_YES;
