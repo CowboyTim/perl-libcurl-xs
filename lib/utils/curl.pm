@@ -5,9 +5,10 @@ use strict; use warnings;
 our $VERSION = '0.1';
 
 require DynaLoader;
-DynaLoader::bootstrap('utils::curl', $VERSION);
+our @ISA = qw(DynaLoader);
+__PACKAGE__->bootstrap($VERSION);
 
-sub dl_load_flags { 0x01 }
+sub dl_load_flags { 0x01 } # RTLD_LAZY
 
 package http;
 

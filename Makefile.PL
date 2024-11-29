@@ -21,6 +21,7 @@ WriteMakefile(
     VERSION_FROM        => 'lib/utils/curl.pm',
     LIBS                => ['-lcurl'],
     CCFLAGS             => "$Config{ccflags} -Wextra -Werror",
+    LDDLFLAGS           => "$Config{lddlflags} -s",
     OPTIMIZE            => '-Os',
     MAN1PODS            => {},
     MAN3PODS            => {},
