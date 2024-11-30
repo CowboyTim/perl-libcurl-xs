@@ -1,4 +1,4 @@
-use Test::More tests => 16;
+use Test::More tests => 21;
 use strict; use warnings;
 
 use FindBin;
@@ -6,29 +6,55 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl');
 
-my $r = http::curl_multi_init();
+http::curl_global_trace();
+
 my $s = http::curl_easy_init();
+isnt($s, undef, 'http::curl_easy_init(): return ok: s not undef: s='.sprintf("0x%x",$$s));
 my $so1 = http::curl_easy_setopt($s, http::CURLOPT_URL(), 'http://www.example.com');
 is($so1, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok URL');
 my $so3 = http::curl_easy_setopt($s, http::CURLOPT_NOBODY(), 1);
 is($so3, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok NOBODY');
 my $so2 = http::curl_easy_setopt($s, http::CURLOPT_VERBOSE(), 1);
 is($so2, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok VERBOSE');
+my $so4 = http::curl_easy_setopt($s, http::CURLOPT_HEADER(), 1);
+is($so4, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok HEADER');
+
+my $t = http::curl_easy_init();
+isnt($t, undef, 'http::curl_easy_init(): return ok: s not undef: t='.sprintf("0x%s",$$t));
+{
+    my $so1 = http::curl_easy_setopt($t, http::CURLOPT_URL(), 'http://www.example.com');
+    is($so1, http::CURLE_OK(), 'http::turl_easy_setopt(): return value ok URL');
+    my $so3 = http::curl_easy_setopt($t, http::CURLOPT_NOBODY(), 1);
+    is($so3, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok NOBODY');
+    my $so2 = http::curl_easy_setopt($t, http::CURLOPT_VERBOSE(), 1);
+    is($so2, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok VERBOSE');
+    my $so4 = http::curl_easy_setopt($t, http::CURLOPT_HEADER(), 1);
+    is($so4, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok HEADER');
+}
+
+my $r = http::curl_multi_init();
+isnt($r, undef, 'http::curl_multi_init(): return ok: r not undef: r='.sprintf("0x%x",$$r));
 my $k1 = http::curl_multi_add_handle($r, $s);
 is($k1, http::CURLM_OK(), 'http::curl_multi_add_handle(): return value ok: handle added');
+my $t1 = http::curl_multi_add_handle($r, $t);
+is($t1, http::CURLM_OK(), 'http::curl_multi_add_handle(): return value ok: handle added');
 my $ri5 = http::curl_multi_info_read($r, my $msgs_in_queue = 5);
 is($ri5, undef, 'http::curl_multi_info_read(): return value ok');
 is($msgs_in_queue, 0, 'http::curl_multi_info_read(): return value ok: msgs_in_queue=0');
 my $rt2 = http::curl_multi_perform($r, my $still_running = 0);
-is($rt2, http::CURLM_OK(), 'http::curl_multi_perform(): return value ok');
-is($still_running, 1, 'http::curl_multi_perform(): return value ok: still_running=1');
+is($rt2, http::CURLM_OK(), 'http::curl_multi_perform(): return value ok: RUN 1');
+is($still_running, 2, 'http::curl_multi_perform(): return value ok: still_running=1');
+my $rt3 = http::curl_multi_perform($r, $still_running);
+is($rt3, http::CURLM_OK(), 'http::curl_multi_perform(): return value ok: RUN 2');
+is($still_running, 2, 'http::curl_multi_perform(): return value ok: still_running=1');
 my $ri3 = http::curl_multi_info_read($r);
 is($ri3, undef, 'http::curl_multi_info_read(): return value ok');
 my $nrloop = 0;
+my $numfds = 0;
 while($still_running and $nrloop <10) {
     $nrloop++;
     $still_running = 0;
-    my $w1 = http::curl_multi_poll($r, undef, 10000, my $numfds);
+    my $w1 = http::curl_multi_wait($r, undef, 30*1000, $numfds);
     if($w1 != http::CURLM_OK()) {
         last;
     }
@@ -38,6 +64,7 @@ while($still_running and $nrloop <10) {
     }
     print STDERR "# nrloop=$nrloop still_running=$still_running, numfds=$numfds\n";
 }
+is($numfds, 0, 'http::curl_multi_wait(): return value ok: numfds=0');
 is($still_running, 0, 'http::curl_multi_perform(): return value ok: still_running=0');
 my $ri4 = http::curl_multi_info_read($r);
 is_deeply($ri4, undef, 'http::curl_multi_info_read(): return value ok');
