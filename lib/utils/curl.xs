@@ -97,7 +97,7 @@ void L_curl_global_trace(...)
         r = curl_global_trace(SvPV_nolen(config));
         if(r != 0)
             XSRETURN_IV(r);
-        XSRETURN_IV(0);
+        XSRETURN_IV(r);
 #else
     XSRETURN_UNDEF;
 #endif
@@ -194,7 +194,7 @@ void L_curl_easy_strerror(int code)
 
 void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
-        int r = 0;
+        int r = -1;
     PPCODE:
         dTHX;
         dSP;
@@ -514,6 +514,7 @@ void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
+        printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -590,7 +591,7 @@ void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
 
 void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
     PREINIT:
-        int r = 0;
+        int r = -1;
     PPCODE:
         dTHX;
         dSP;
@@ -667,7 +668,7 @@ void L_curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0
         croak("curl_multi_poll is not supported in this version of libcurl");
 #endif
 
-void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=NULL)
+void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=NULL, int timeout=0, SV *numfds=NULL)
     PREINIT:
         int r = 0;
         int nfds = 0;
