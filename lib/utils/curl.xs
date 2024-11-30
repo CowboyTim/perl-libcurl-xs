@@ -203,19 +203,21 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         if(value == NULL)
             XSRETURN_UNDEF;
 
-        //printf("p: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
             long _vl = (long)SvIV(value);
+        //printf("p1: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             if(!SvPOK(value))
                 XSRETURN_UNDEF;
+        //printf("p2: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
             char *_vc = (char *)SvPV_nolen(value);
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
             XSRETURN_UNDEF;
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
             long _vo = (curl_off_t)SvIV(value);
+        //printf("p3: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vo);
         } else {
             XSRETURN_UNDEF;
@@ -514,7 +516,7 @@ void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
+        //printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -531,6 +533,7 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_UNDEF;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
+        //printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         XSRETURN_IV(r);
 
@@ -677,6 +680,7 @@ void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=NULL, int timeout=0, SV *nu
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
+        //printf("WAIT: %p, T: %d\n", (CURLM *)THIS(m_http), timeout);
         r = curl_multi_wait((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
