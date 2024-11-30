@@ -1,4 +1,4 @@
-use Test::More tests => 21;
+use Test::More tests => 31;
 use strict; use warnings;
 
 use FindBin;
@@ -18,6 +18,8 @@ my $so2 = http::curl_easy_setopt($s, http::CURLOPT_VERBOSE(), 1);
 is($so2, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok VERBOSE');
 my $so4 = http::curl_easy_setopt($s, http::CURLOPT_HEADER(), 1);
 is($so4, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok HEADER');
+my $so5 = http::curl_easy_setopt($s, http::CURLOPT_DNS_SERVERS(), "8.8.8.8,1.1.1.1");
+is($so5, 48, 'http::curl_easy_setopt(): return value NOT SET DNS_SERVERS');
 
 my $t = http::curl_easy_init();
 isnt($t, undef, 'http::curl_easy_init(): return ok: s not undef: t='.sprintf("0x%s",$$t));
@@ -30,6 +32,9 @@ isnt($t, undef, 'http::curl_easy_init(): return ok: s not undef: t='.sprintf("0x
     is($so2, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok VERBOSE');
     my $so4 = http::curl_easy_setopt($t, http::CURLOPT_HEADER(), 1);
     is($so4, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok HEADER');
+    my $so5 = http::curl_easy_setopt($t, http::CURLOPT_DNS_SERVERS(), "8.8.8.8,1.1.1.1");
+    is($so5, 48, 'http::curl_easy_setopt(): return value not set DNS_SERVERS');
+    is(http::curl_easy_strerror($so5), 'An unknown option was passed in to libcurl', 'http::curl_easy_strerror(): return value not set DNS_SERVERS');
 }
 
 my $r = http::curl_multi_init();
