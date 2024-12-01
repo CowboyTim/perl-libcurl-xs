@@ -8,6 +8,31 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
+static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userp){
+    dTHX;
+    dSP;
+    if(userp == NULL)
+        return 0;
+    SV *va = (SV*)userp;
+    if(!SvROK(va))
+        return 0;
+    SV *cb = SvRV(va);
+    if(SvTYPE(cb) != SVt_PVCV)
+        return 0;
+    ENTER;
+    SAVETMPS;
+    PUSHMARK(SP);
+    XPUSHs(sv_2mortal(newSViv((IV)handle)));
+    XPUSHs(sv_2mortal(newSViv((IV)type)));
+    XPUSHs(sv_2mortal(newSVpv(data, size)));
+    PUTBACK;
+    call_sv(cb, G_DISCARD);
+    FREETMPS;
+    LEAVE;
+    return 0;
+}
+
+
 MODULE = utils::curl                PACKAGE = http           PREFIX = L_
 
 VERSIONCHECK: DISABLE
@@ -214,7 +239,20 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             char *_vc = (char *)SvPV_nolen(value);
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
-            XSRETURN_UNDEF;
+            if(!SvROK(value))
+                XSRETURN_UNDEF;
+            SV *cb = SvRV(value);
+            //printf("CALLBACK: %p, %p, %d, %d, %d\n", cb, value, SvTYPE(cb), SvTYPE(value), SVt_PVCV);
+            if(SvTYPE(cb) != SVt_PVCV)
+                XSRETURN_UNDEF;
+            if(c_opt == CURLOPT_DEBUGFUNCTION || c_opt == CURLOPT_DEBUGDATA){
+                int k = curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_DEBUGDATA, value);
+                if(k != CURLE_OK)
+                    XSRETURN_IV(k);
+                r = curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_DEBUGFUNCTION, curl_debugfunction_cb);
+            } else {
+                XSRETURN_UNDEF;
+            }
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
             long _vo = (curl_off_t)SvIV(value);
         //printf("p3: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
