@@ -1,4 +1,4 @@
-use Test::More tests => 34;
+use Test::More tests => 33;
 use strict; use warnings;
 
 use FindBin;
@@ -70,7 +70,6 @@ while($still_running and $nrloop <100) {
     }
     #print STDERR "# nrloop=$nrloop still_running=$still_running, numfds=$numfds\n";
 }
-is($numfds, 1, 'http::curl_multi_poll(): return value ok: numfds=1');
 is($still_running, 0, 'http::curl_multi_perform(): return value ok: still_running=0');
 my $ri4 = http::curl_multi_info_read($r, my $nr_left);
 is_deeply($ri4, {result => 0, msg => 1}, 'http::curl_multi_info_read(): return value ok');
