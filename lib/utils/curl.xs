@@ -664,7 +664,7 @@ void L_curl_easy_init()
         void *ptr = NULL;
         Newxz(ptr, 1, p_curl_easy);
         //printf("c: %lld, %p, %p\n", (long long)c, c, ptr);
-        ((p_curl_easy *)ptr)->curle = sv; // no need to increase refcount
+        ((p_curl_easy *)ptr)->curle = SvRV(sv); // no need to increase refcount
         curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
 
 void L_curl_easy_cleanup(SV *e_http=NULL)
