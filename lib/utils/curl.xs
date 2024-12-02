@@ -13,10 +13,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     dSP;
     if(userp == NULL)
         return 0;
-    SV *va = (SV*)userp;
-    if(!SvROK(va))
-        return 0;
-    SV *cb = SvRV(va);
+    SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -246,7 +243,8 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             if(SvTYPE(cb) != SVt_PVCV)
                 XSRETURN_UNDEF;
             if(c_opt == CURLOPT_DEBUGFUNCTION || c_opt == CURLOPT_DEBUGDATA){
-                int k = curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_DEBUGDATA, value);
+                SvREFCNT_inc(cb);
+                int k = curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_DEBUGDATA, cb);
                 if(k != CURLE_OK)
                     XSRETURN_IV(k);
                 r = curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_DEBUGFUNCTION, curl_debugfunction_cb);
