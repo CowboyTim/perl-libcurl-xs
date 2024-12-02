@@ -1311,7 +1311,7 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
             int r = curl_easy_getinfo(e[i], CURLINFO_PRIVATE, &p);
             if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
                 continue;
-            av_push(av, (p_curl_easy *)p->curle);
+            av_push(av, ((p_curl_easy *)p)->curle);
         }
         curl_free(e);
         XPUSHs(newRV_noinc((SV *)av));
@@ -1339,11 +1339,11 @@ void M_DESTROY(SV *m_http=NULL)
         if(e){
             for(int i=0; e[i]; i++){
                 curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)e[i]);
-            }
-            void *p = NULL;
-            int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
-            if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
-                SvREFCNT_dec((SV *)((p_curl_easy *)p)->curle);
+                void *p = NULL;
+                int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
+                if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
+                    SvREFCNT_dec((SV *)((p_curl_easy *)p)->curle);
+                }
             }
         }
 #endif
