@@ -571,17 +571,21 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_UNDEF;
         //printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
         XSRETURN_IV(r);
 
-void L_curl_multi_remove_handle(SV *m_http=NULL, SV *easy=NULL)
+void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        if(!easy || !SvROK(easy) || SvRV(easy) == &PL_sv_undef)
+        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
             XSRETURN_UNDEF;
-        int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(easy));
+        int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
         XSRETURN_IV(r);
 
 void L_curl_multi_strerror(int code)
