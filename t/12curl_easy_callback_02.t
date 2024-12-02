@@ -20,7 +20,7 @@ use_ok('utils::curl', qw());
     my $so5 = http::curl_easy_setopt($e, http::CURLOPT_FOLLOWLOCATION(), 1);
     is($so5, http::CURLE_OK(), 'http::curl_easy_setopt() return');
     my $cnt = 0;
-    my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), my $abc = sub {
+    my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), sub {
         my ($type, $data, $size, $userp) = @_;
         $cnt++;
         return 0; 
