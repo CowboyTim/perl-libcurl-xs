@@ -573,6 +573,7 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
+        SvREFCNT_inc(SvRV(e_http));
         XSRETURN_IV(r);
 
 void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
@@ -581,11 +582,13 @@ void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        if(!e_http || !SvROK(e_http) || SvRV(e_http) == &PL_sv_undef)
+        if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
+        if(SvREFCNT(SvRV(e_http)) > 1)
+            SvREFCNT_dec(SvRV(e_http));
         XSRETURN_IV(r);
 
 void L_curl_multi_strerror(int code)
@@ -765,9 +768,10 @@ void M_DESTROY(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("d: %p\n", (CURLM *)THIS(m_http));
+        //printf("destroy_multi: %p\n", (CURLM *)THIS(m_http));
         // get all handles and remove them
 #if (LIBCURL_VERSION_NUM >= 0x080400)
+        //printf("destroy_multi_handles: %p\n", SvRV(m_http));
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(e){
             for(int i=0; e[i]; i++){
@@ -781,7 +785,7 @@ void M_DESTROY(SV *m_http=NULL)
             warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), (CURLM *)THIS(m_http));
             XSRETURN_NO;
         }
-        //printf("p: %p\n", (CURLM *)THIS(m_http));
+        //printf("after_destroy_curl_multi: %p\n", (CURLM *)THIS(m_http));
         XSRETURN_YES;
 
 MODULE = utils::curl                PACKAGE = http::curl::easy             PREFIX = E_
