@@ -1340,7 +1340,11 @@ void M_DESTROY(SV *m_http=NULL)
             for(int i=0; e[i]; i++){
                 curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)e[i]);
             }
-            // don't free the curl_easy handles, as they are still in SV's and will be destroyed by E_DESTROY
+            void *p = NULL;
+            int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
+            if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
+                SvREFCNT_dec((SV *)((p_curl_easy *)p)->curle);
+            }
         }
 #endif
         int r = curl_multi_cleanup((CURLM *)THIS(m_http));
@@ -1366,7 +1370,7 @@ void E_DESTROY(SV *e_http=NULL)
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){
-            //printf("destroy_easy: %p, %p\n", (CURL *)THIS(e_http), p);
+            //printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
             for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
                 if(((p_curl_easy *)p)->cb[f]){
@@ -1377,3 +1381,41 @@ void E_DESTROY(SV *e_http=NULL)
         }
         curl_easy_cleanup((CURL *)THIS(e_http));
         XSRETURN_YES;
+
+MODULE = utils::curl                PACKAGE = http             PREFIX = L_
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+#include <sys/time.h>
+#include <sys/resource.h>
+
+HV *
+L_getrusage (...)
+    CODE:
+        dTHX;
+        dSP;
+        HV *rh;
+
+        struct rusage ru_posix = {};
+        int r = getrusage(RUSAGE_SELF, &ru_posix);
+        if(r == -1){
+            SETERRNO(errno, 0);
+            XSRETURN_UNDEF;
+        }
+
+        rh = (HV *)sv_2mortal((SV *)newHV());
+
+        hv_store(rh , "ru_inblock" , 10 , newSVuv(ru_posix.ru_inblock) , 0);
+        hv_store(rh , "ru_oublock" , 10 , newSVuv(ru_posix.ru_oublock) , 0);
+        hv_store(rh , "ru_maxrss"  ,  9 , newSVuv(ru_posix.ru_maxrss)  , 0);
+        hv_store(rh , "ru_minflt"  ,  9 , newSVuv(ru_posix.ru_minflt)  , 0);
+        hv_store(rh , "ru_majflt"  ,  9 , newSVuv(ru_posix.ru_majflt)  , 0);
+        hv_store(rh , "ru_nvcsw"   ,  8 , newSVuv(ru_posix.ru_nvcsw)   , 0);
+        hv_store(rh , "ru_nivcsw"  ,  9 , newSVuv(ru_posix.ru_nivcsw)  , 0);
+        hv_store(rh , "ru_utime"   ,  8 , newSVnv((double)ru_posix.ru_utime.tv_sec + ((double)ru_posix.ru_utime.tv_usec)/1e6) , 0);
+        hv_store(rh , "ru_stime"   ,  8 , newSVnv((double)ru_posix.ru_stime.tv_sec + ((double)ru_posix.ru_stime.tv_usec)/1e6) , 0);
+
+        RETVAL = rh;
+    OUTPUT:
+        RETVAL
