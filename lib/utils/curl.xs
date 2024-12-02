@@ -37,7 +37,7 @@ enum perl_cb_function {
 };
 
 typedef struct {
-    CURL *c;
+    SV *curle;
     SV *cb[MAX_CB];
 } p_curl_easy;
 
@@ -664,6 +664,7 @@ void L_curl_easy_init()
         void *ptr = NULL;
         Newxz(ptr, 1, p_curl_easy);
         //printf("c: %lld, %p, %p\n", (long long)c, c, ptr);
+        ((p_curl_easy *)ptr)->curle = sv; // no need to increase refcount
         curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
 
 void L_curl_easy_cleanup(SV *e_http=NULL)
@@ -1306,10 +1307,11 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
             XSRETURN_UNDEF;
         AV *av = (AV*)sv_2mortal((SV*)newAV());
         for(int i=0; e[i]; i++){
-            SV *sv = sv_newmortal();
-            sv_setref_pv(sv, "http::curl::easy", (void *)e[i]);
-            SvREADONLY_on(sv);
-            av_push(av, sv);
+            void *p = NULL;
+            int r = curl_easy_getinfo(e[i], CURLINFO_PRIVATE, &p);
+            if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
+                continue;
+            av_push(av, (p_curl_easy *)p->curle);
         }
         curl_free(e);
         XPUSHs(newRV_noinc((SV *)av));
@@ -1365,6 +1367,7 @@ void E_DESTROY(SV *e_http=NULL)
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){
             //printf("destroy_easy: %p, %p\n", (CURL *)THIS(e_http), p);
+            ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
             for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
                 if(((p_curl_easy *)p)->cb[f]){
                     SvREFCNT_dec((SV *)((p_curl_easy *)p)->cb[f]);
