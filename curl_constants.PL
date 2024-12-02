@@ -2,7 +2,7 @@ use strict; use warnings;
 my $ofn = shift @ARGV || "curl_constants.xsh";
 my @c;
 # read in CURLE_ enum constants from the curl.h header file
-my $inc_flags = $ENV{LIBCURL_INCLUDE} ||= do {
+my $inc_flags = $ENV{LIBCURL_INC} ||= do {
     my $inc_flags = `pkg-config libcurl --cflags-only-I`;
     chomp $inc_flags;
     if(!$inc_flags){
