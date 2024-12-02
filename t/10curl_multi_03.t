@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 17;
 use strict; use warnings;
 
 use FindBin;
@@ -34,12 +34,38 @@ eval {
 };
 is($@, '', 'http::curl_multi_add_handle(): cleanup before curl_multi_perform');
 
-my $rt2 = http::curl_multi_perform($r, my $still_running = 0);
+my $rt2 = http::curl_multi_perform($r, my $still_running);
 is($rt2, http::CURLM_OK(), 'http::curl_multi_perform(): return value ok: RUN 1');
-is($still_running, 0, 'http::curl_multi_perform(): return value ok: still_running=0');
+is($still_running, 2, 'http::curl_multi_perform(): return value ok: still_running=0');
 my $ri4 = http::curl_multi_info_read($r, my $nr_left);
 is_deeply($ri4, undef, 'http::curl_multi_info_read(): return value ok: undef');
 is($nr_left, 0, 'http::curl_multi_info_read(): return value ok: nr_left=0');
+my $nrloop = 0;
+my $numfds = 0;
+my $ri3;
+while($still_running and $nrloop <100) {
+    $nrloop++;
+    $still_running = 0;
+    my $w1 = http::curl_multi_poll($r, undef, 30*1000, $numfds);
+    if($w1 != http::CURLM_OK()) {
+        last;
+    }
+    $ri3 = http::curl_multi_perform($r, $still_running);
+    if($ri3 != http::CURLM_OK()) {
+        last;
+    }
+    #print STDERR "# nrloop=$nrloop still_running=$still_running, numfds=$numfds\n";
+}
+{
+    my $ri5 = http::curl_multi_info_read($r, my $nr_left_bis);
+    is_deeply($ri5, {msg => 1, result => 0}, 'http::curl_multi_info_read(): return value ok: undef');
+    is($nr_left_bis, 1, 'http::curl_multi_info_read(): return value ok: nr_left=1');
+}
+{
+    my $ri5 = http::curl_multi_info_read($r, my $nr_left_bis);
+    is_deeply($ri5, {msg => 1, result => 0}, 'http::curl_multi_info_read(): return value ok: undef');
+    is($nr_left_bis, 0, 'http::curl_multi_info_read(): return value ok: nr_left=0');
+}
 my $e = http::curl_multi_cleanup($r);
 is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
 is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');

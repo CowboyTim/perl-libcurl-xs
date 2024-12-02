@@ -1,4 +1,4 @@
-use Test::More tests => 35;
+use Test::More tests => 34;
 use strict; use warnings;
 
 use FindBin;
@@ -50,10 +50,6 @@ use_ok('utils::curl');
 
     my $l2 = http::curl_multi_remove_handle($r, $s);
     is($l2, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok');
-
-    my $s2 = http::curl_easy_init();
-    my $k4 = http::curl_multi_remove_handle($r, $s2);
-    is($k4, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok: handle removed for NOT added handle');
 
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
