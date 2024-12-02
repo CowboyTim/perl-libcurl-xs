@@ -17,8 +17,11 @@ int cb_setup(CURL *e_http, int c_opt_f, int c_opt_d, void *cb_f, SV *cb_d){
     if(r != CURLE_OK)
         return r;
     r = curl_easy_setopt(e_http, c_opt_f, cb_f);
-    if(r != CURLE_OK)
+    if(r != CURLE_OK){
+        curl_easy_setopt(e_http, c_opt_d, NULL);
+        curl_easy_setopt(e_http, c_opt_f, NULL);
         return r;
+    }
     SvREFCNT_inc(cb_d);
     return r;
 }
