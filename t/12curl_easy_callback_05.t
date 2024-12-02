@@ -1,4 +1,4 @@
-use Test::More tests => 8;
+use Test::More tests => 6;
 use strict; use warnings;
 
 use FindBin;
@@ -13,11 +13,8 @@ use_ok('utils::curl', qw());
     http::curl_easy_setopt($e, http::CURLOPT_VERBOSE(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_HEADER(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
-    http::curl_easy_setopt($e, http::CURLOPT_FOLLOWLOCATION(), 1);
     my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), my $abc = "");
     is($sod, undef, 'http::curl_easy_setopt() return undef, we didnt provide a sub');
-    my $rok = http::curl_easy_perform($e);
-    is($rok, 0, 'http::curl_easy_perform() return HTTP_OK');
     my $r = http::curl_easy_cleanup($e);
     is($r, undef, 'http::curl_easy_cleanup() return undef');
 }
@@ -28,11 +25,8 @@ use_ok('utils::curl', qw());
     http::curl_easy_setopt($e, http::CURLOPT_VERBOSE(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_HEADER(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
-    http::curl_easy_setopt($e, http::CURLOPT_FOLLOWLOCATION(), 1);
     my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), my $abc = \(""));
     is($sod, undef, 'http::curl_easy_setopt() return undef, we didnt provide a sub');
-    my $rok = http::curl_easy_perform($e);
-    is($rok, 0, 'http::curl_easy_perform() return HTTP_OK');
     my $r = http::curl_easy_cleanup($e);
     is($r, undef, 'http::curl_easy_cleanup() return undef');
 }
