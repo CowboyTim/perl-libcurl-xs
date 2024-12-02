@@ -11,6 +11,36 @@
 #define THISSvOK(sv) (sv != NULL && SvROK(sv) && SvRV(sv) != &PL_sv_undef && INT2PTR(void *, SvIV(SvRV(sv))) != NULL)
 #define THIS(sv)   INT2PTR(void *, SvIV(SvRV(sv)))
 
+#define MAX_CB 20
+
+enum perl_cb_function {
+    CB_DEBUGFUNCTION,
+    CB_CLOSESOCKETFUNCTION,
+    CB_OPENSOCKETFUNCTION,
+    CB_HEADERFUNCTION,
+    CB_HSTSREADFUNCTION,
+    CB_HSTSWRITEFUNCTION,
+    CB_INTERLEAVEFUNCTION,
+    CB_IOCTLFUNCTION,
+    CB_FNMATCHFUNCTION,
+    CB_PREREQFUNCTION,
+    CB_PROGRESSFUNCTION,
+    CB_READFUNCTION,
+    CB_WRITEFUNCTION,
+    CB_RESOLVER_START_FUNCTION,
+    CB_SEEKFUNCTION,
+    CB_SOCKOPTFUNCTION,
+    CB_SSL_CTX_FUNCTION,
+    CB_SSH_KEYFUNCTION,
+    CB_TRAILERFUNCTION,
+    CB_XFERINFOFUNCTION,
+};
+
+typedef struct {
+    CURL *c;
+    SV *cb[MAX_CB];
+} p_curl_easy;
+
 int cb_setup(CURL *e_http, int c_opt_f, int c_opt_d, void *cb_f, SV *cb_d){
     int r = 0;
     r = curl_easy_setopt(e_http, c_opt_d, cb_d);
@@ -631,6 +661,10 @@ void L_curl_easy_init()
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
         XPUSHs(sv);
+        void *ptr = NULL;
+        Newxz(ptr, 1, p_curl_easy);
+        //printf("c: %lld, %p, %p\n", (long long)c, c, ptr);
+        curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
 
 void L_curl_easy_cleanup(SV *e_http=NULL)
     PPCODE:
@@ -843,6 +877,21 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
         XPUSHs(sv);
+
+        void *ptr = NULL;
+        Newxz(ptr, 1, p_curl_easy);
+        //printf("c: %lld, %p, %p\n", (long long)c, c, ptr);
+        void *p = NULL;
+        int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        if(r == CURLE_OK && p){
+            for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
+                if(((p_curl_easy *)p)->cb[f]){
+                    SvREFCNT_inc((SV *)((p_curl_easy *)p)->cb[f]);
+                    ((p_curl_easy *)ptr)->cb[f] = ((p_curl_easy *)p)->cb[f];
+                }
+            }
+        }
+        curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
 
 void L_curl_easy_escape(...)
     SV *url=NULL;
@@ -1312,5 +1361,16 @@ void E_DESTROY(SV *e_http=NULL)
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         //printf("destroy_easy: %p\n", (CURL *)THIS(e_http));
+        void *p = NULL;
+        int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        if(r == CURLE_OK && p){
+            //printf("destroy_easy: %p, %p\n", (CURL *)THIS(e_http), p);
+            for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
+                if(((p_curl_easy *)p)->cb[f]){
+                    SvREFCNT_dec((SV *)((p_curl_easy *)p)->cb[f]);
+                }
+            }
+            Safefree(p);
+        }
         curl_easy_cleanup((CURL *)THIS(e_http));
         XSRETURN_YES;
