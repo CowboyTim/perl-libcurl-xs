@@ -1558,3 +1558,74 @@ void U_DESTROY(SV *u_http=NULL)
             XSRETURN_UNDEF;
         curl_url_cleanup((CURLU *)THIS(u_http));
         XSRETURN_YES;
+
+MODULE = utils::curl                PACKAGE = http             PREFIX = W_
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+void W_curl_ws_meta(SV *ws_http=NULL, SV *key=NULL, SV *value=NULL)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(ws_http))
+            XSRETURN_UNDEF;
+        if(!key || !SvPOK(key))
+            XSRETURN_UNDEF;
+        if(!value || !SvPOK(value))
+            XSRETURN_UNDEF;
+        const struct curl_ws_frame *w = curl_ws_meta((CURL *)THIS(ws_http));
+        if(!w)
+            XSRETURN_UNDEF;
+        HV *rh = (HV*)sv_2mortal((SV*)newHV());
+        hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
+        hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
+        hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
+        hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
+        XPUSHs(newRV((SV*)rh));
+
+void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0, SV *hv_meta=NULL)
+    PREINIT:
+        int r = 0;
+        size_t recv_sz = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(ws_http))
+            XSRETURN_UNDEF;
+        if(!data || !SvPOK(data) || data == &PL_sv_undef)
+            XSRETURN_UNDEF;
+        if(max_sz == 0)
+            XSRETURN_IV(0);
+        const struct curl_ws_frame *w = NULL;
+        SV *buf = newSV(max_sz);
+        SvPOK_only(buf);
+        r = curl_ws_recv((CURL *)THIS(ws_http), SvPV_nolen(buf), max_sz, &recv_sz, &w);
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        buf = sv_2mortal(buf);
+        SvCUR_set(buf, recv_sz);
+        sv_catsv_nomg(data, buf);
+        HV *rh = (HV*)sv_2mortal((SV*)newHV());
+        hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
+        hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
+        hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
+        hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
+        SvRV_set(hv_meta, newRV((SV*)rh));
+        XSRETURN_IV(r);
+
+void W_curl_ws_send(SV *ws_http=NULL, SV *data=&PL_sv_undef, int ws_code=0)
+    PREINIT:
+        int r = 0;
+        size_t sent_sz = 0;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(ws_http))
+            XSRETURN_UNDEF;
+        if(!data || !SvPOK(data))
+            XSRETURN_UNDEF;
+        r = curl_ws_send((CURL *)THIS(ws_http), SvPV_nolen(data), SvCUR(data), &sent_sz, 0, ws_code);
+        if(r != CURLE_OK)
+            XSRETURN_IV(r);
+        XSRETURN_IV(0);

@@ -44,9 +44,7 @@ WriteMakefile(
     DEFINE              => '-UXS_APIVERSION_BOOTCHECK -UXS_VERSION_BOOTCHECK',
     INC                 => "-I. -I$ENV{LIBCURL_INC}",
     NO_META             => 1,
-    PL_FILES            => {
-        'curl_constants.PL' => 'curl_constants.xsh',
-    },
+    PL_FILES            => {},
     NO_MYMETA           => 1,
     XSMULTI             => 1,
     BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},

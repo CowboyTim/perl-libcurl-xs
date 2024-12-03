@@ -12,7 +12,7 @@ my $inc_flags = $ENV{LIBCURL_INC} ||= do {
     $inc_flags;
 };
 my $str = '';
-for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h)){
+for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h curl/websockets.h)) {
     my $curl_h = "$inc_flags/$f";
     open(my $fh, "<", $curl_h) or die "Can't open $curl_h: $!\n";
     print STDERR "reading in $curl_h\n";
@@ -24,6 +24,7 @@ for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h)){
 }
 push @c, $str =~ m/^\s*(CURLINFO_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLE_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/\s*#define\s*(CURLWS_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLUE_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLUPART_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/\s*#define\s*(CURLU_(?:[A-Z_0-9]+))\s*/gms;
