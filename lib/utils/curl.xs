@@ -1429,7 +1429,7 @@ void E_DESTROY(SV *e_http=NULL)
         curl_easy_cleanup((CURL *)THIS(e_http));
         XSRETURN_YES;
 
-MODULE = utils::curl                PACKAGE = http             PREFIX = L_
+MODULE = utils::curl                PACKAGE = http             PREFIX = R_
 
 VERSIONCHECK: DISABLE
 PROTOTYPES: DISABLE
@@ -1438,7 +1438,7 @@ PROTOTYPES: DISABLE
 #include <sys/resource.h>
 
 HV *
-L_getrusage (...)
+R_getrusage (...)
     CODE:
         dTHX;
         dSP;
