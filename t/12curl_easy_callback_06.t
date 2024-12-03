@@ -1,4 +1,4 @@
-use Test::More tests => 18;
+use Test::More tests => 20;
 use strict; use warnings;
 
 use FindBin;
@@ -79,6 +79,9 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
         });
         push @lst, $e;
     }
+
+    ok($st->{ru_maxrss} > $sz_min, 'http::getrusage() >min same, kept list, s='.$st->{ru_maxrss});
+    ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() <max same, kept list, s='.$st->{ru_maxrss});
 
     eval {
         foreach my $i (1..100){
