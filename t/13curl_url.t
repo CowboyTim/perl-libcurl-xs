@@ -1,4 +1,4 @@
-use Test::More tests => 9;
+use Test::More tests => 21;
 use strict; use warnings;
 
 use FindBin;
@@ -31,5 +31,32 @@ use_ok('utils::curl', qw());
     my $r = http::curl_url_get($u, http::CURLUPART_QUERY(), my $url_q, http::CURLU_URLENCODE());
     is($r, http::CURLUE_OK(), 'http::curl_url_get(): return value ok');
     is($url_q, 'query=string&more=&some=;-()*%;@', 'http::curl_url_set() and http::curl_url_get()');
+    my $d = http::curl_url_dup($u);
+    isnt($d, undef, 'http::curl_url_dup(): return ok: d not undef: d='.sprintf("0x%x",$$d));
     http::curl_url_cleanup($u);
+    my $s = http::curl_url_get($d, http::CURLUPART_SCHEME(), my $url_s, http::CURLU_URLENCODE());
+    is($s, http::CURLUE_OK(), 'http::curl_url_get(): return value ok');
+    is($url_s, 'http', 'http::curl_url_get(): scheme');
+}
+
+{
+    my $r;
+    my $u = http::curl_url();
+    my $k = http::curl_url_set($u, http::CURLUPART_SCHEME(), 'https');
+    is($k, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_HOST(), 'www.example.com');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_PORT(), '677');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_PATH(), '/some/url');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_QUERY(), 'query=string&more=&some=;-()*%;@');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_USER(), 'u');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_set($u, http::CURLUPART_PASSWORD(), 'b');
+    is($r, http::CURLUE_OK(), 'http::curl_url_set(): return value ok');
+    $r = http::curl_url_get($u, http::CURLUPART_URL(), my $url);
+    is($r, http::CURLUE_OK(), 'http::curl_url_get(): return value ok');
+    is($url, 'https://u:b@www.example.com:677/some/url?query=string&more=&some=;-()*%;@', 'http::curl_url_set() and http::curl_url_get()');
 }
