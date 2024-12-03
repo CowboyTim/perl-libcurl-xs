@@ -1466,3 +1466,97 @@ R_getrusage (...)
         RETVAL = rh;
     OUTPUT:
         RETVAL
+
+MODULE = utils::curl                PACKAGE = http             PREFIX = U_
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+void U_curl_url()
+    PPCODE:
+        dTHX;
+        dSP;
+        CURLU *u = curl_url();
+        if(!u)
+            XSRETURN_NO;
+        SV *sv = sv_newmortal();
+        sv_setref_pv(sv, "http::curl::url", (void *)u);
+        SvREADONLY_on(sv);
+        XPUSHs(sv);
+
+void U_curl_url_cleanup(SV *u_http=NULL)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(u_http))
+            XSRETURN_UNDEF;
+        curl_url_cleanup((CURLU *)THIS(u_http));
+        XSRETURN_YES;
+
+void U_curl_url_dup(SV *u_http=NULL)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(u_http))
+            XSRETURN_UNDEF;
+        CURLU *u = curl_url_dup((CURLU *)THIS(u_http));
+        if(!u)
+            XSRETURN_NO;
+        SV *sv = sv_newmortal();
+        sv_setref_pv(sv, "http::curl::url", (void *)u);
+        SvREADONLY_on(sv);
+        XPUSHs(sv);
+
+void U_curl_url_get(SV *u_http=NULL, int c_info=0, SV *value=NULL, int flags=0)
+    PREINIT:
+        char *s = NULL;
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(u_http))
+            XSRETURN_UNDEF;
+        if(c_info == 0)
+            XSRETURN_UNDEF;
+        int r = curl_url_get((CURLU *)THIS(u_http), c_info, &s, flags);
+        if(r != CURLUE_OK)
+            XSRETURN_IV(r);
+        if(value){
+            sv_setpvn(value, s, strlen(s));
+        }
+        XSRETURN(r);
+
+void U_curl_url_set(SV *u_http=NULL, int c_info=0, SV *value=NULL)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(u_http))
+            XSRETURN_UNDEF;
+        if(!value || !SvPOK(value))
+            XSRETURN_UNDEF;
+        int r = curl_url_set((CURLU *)THIS(u_http), c_info, SvPV_nolen(value), 0);
+        if(r != CURLUE_OK)
+            XSRETURN_IV(r);
+        XSRETURN_IV(r);
+
+void U_curl_url_strerror(int code)
+    PPCODE:
+        dTHX;
+        dSP;
+        const char *s = curl_url_strerror(code);
+        if(!s)
+            XSRETURN_UNDEF;
+        XPUSHs(sv_2mortal(newSVpv(s, 0)));
+
+MODULE = utils::curl                PACKAGE = http::curl::url             PREFIX = U_
+
+VERSIONCHECK: DISABLE
+PROTOTYPES: DISABLE
+
+void U_DESTROY(SV *u_http=NULL)
+    PPCODE:
+        dTHX;
+        dSP;
+        if(!THISSvOK(u_http))
+            XSRETURN_UNDEF;
+        curl_url_cleanup((CURLU *)THIS(u_http));
+        XSRETURN_YES;
