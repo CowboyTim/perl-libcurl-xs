@@ -13,6 +13,9 @@
 
 #define MAX_CB 20
 
+#define CB_FIRST CB_DEBUGFUNCTION
+#define CB_LAST  CB_XFERINFOFUNCTION
+
 enum perl_cb_function {
     CB_DEBUGFUNCTION,
     CB_CLOSESOCKETFUNCTION,
@@ -885,7 +888,7 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){
-            for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
+            for(int f=CB_FIRST; f<CB_LAST; f++){
                 if(((p_curl_easy *)p)->cb[f]){
                     SvREFCNT_inc((SV *)((p_curl_easy *)p)->cb[f]);
                     ((p_curl_easy *)ptr)->cb[f] = ((p_curl_easy *)p)->cb[f];
@@ -1372,7 +1375,7 @@ void E_DESTROY(SV *e_http=NULL)
         if(r == CURLE_OK && p){
             //printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
-            for(int f=CB_DEBUGFUNCTION; f<CB_XFERINFOFUNCTION; f++){
+            for(int f=CB_FIRST; f<CB_LAST; f++){
                 if(((p_curl_easy *)p)->cb[f]){
                     SvREFCNT_dec((SV *)((p_curl_easy *)p)->cb[f]);
                 }
