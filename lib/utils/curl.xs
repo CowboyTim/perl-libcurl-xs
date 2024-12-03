@@ -1507,7 +1507,7 @@ void U_curl_url_dup(SV *u_http=NULL)
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
-void U_curl_url_get(SV *u_http=NULL, int c_info=0, SV *value=NULL, int flags=0)
+void U_curl_url_get(SV *u_http=NULL, int c_info=-1, SV *value=NULL, int flags=0)
     PREINIT:
         char *s = NULL;
     PPCODE:
@@ -1515,12 +1515,12 @@ void U_curl_url_get(SV *u_http=NULL, int c_info=0, SV *value=NULL, int flags=0)
         dSP;
         if(!THISSvOK(u_http))
             XSRETURN_UNDEF;
-        if(c_info == 0)
+        if(c_info == -1)
             XSRETURN_UNDEF;
         int r = curl_url_get((CURLU *)THIS(u_http), c_info, &s, flags);
         if(r != CURLUE_OK)
             XSRETURN_IV(r);
-        if(value){
+        if(value != NULL){
             sv_setpvn(value, s, strlen(s));
         }
         XSRETURN(r);

@@ -12,7 +12,7 @@ my $inc_flags = $ENV{LIBCURL_INC} ||= do {
     $inc_flags;
 };
 my $str = '';
-for my $f (qw(curl/curl.h curl/multi.h curl/easy.h)){
+for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h)){
     my $curl_h = "$inc_flags/$f";
     open(my $fh, "<", $curl_h) or die "Can't open $curl_h: $!\n";
     print STDERR "reading in $curl_h\n";
@@ -24,6 +24,9 @@ for my $f (qw(curl/curl.h curl/multi.h curl/easy.h)){
 }
 push @c, $str =~ m/^\s*(CURLINFO_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLE_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/^\s*(CURLUE_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/^\s*(CURLUPART_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/\s*#define\s*(CURLU_(?:[A-Z_0-9]+))\s*/gms;
 my $m_str = $str =~ s/.*typedef enum \{(.*?)\} CURLMoption;.*/$1/gmsr;
 push @c, $m_str =~ m/^\s*(CURLMOPT_(?:[A-Z_0-9]+))\s*/gms;
 my $s_str = $str =~ s/.*typedef enum \{(.*?)\} CURLMcode;.*/$1/gmsr;
