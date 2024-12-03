@@ -13,12 +13,18 @@ $ENV{LIBCURL_INC} ||= do {
 };
 
 $ENV{LIBCURL_LIB} ||= do {
-    my $lib_flags = `pkg-config libcurl --libs-only-L`;
-    chomp $lib_flags;
-    if(!$lib_flags){
-        die "No libcurl installed according to `pkg-config libcurl`";
+    my $lib_flags;
+    if($ENV{LIBCURL_INC}){
+        $lib_flags = $ENV{LIBCURL_INC};
+        $lib_flags =~ s/\/include/\/lib/;
+    } else {
+        $lib_flags = `pkg-config libcurl --libs-only-L`;
+        chomp $lib_flags;
+        if(!$lib_flags){
+            die "No libcurl installed according to `pkg-config libcurl`";
+        }
+        $lib_flags =~ s/^-L//;
     }
-    $lib_flags =~ s/^-L//;
     $lib_flags;
 };
 

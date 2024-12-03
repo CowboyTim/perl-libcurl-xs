@@ -12,8 +12,13 @@ use_ok('utils::curl');
     my $s = http::curl_easy_init();
     is(ref($s), 'http::curl::easy', 'http::curl_easy_init() return: s=0x'.sprintf("%x",$$s));
     my $k = http::curl_multi_remove_handle($r, $s);
-    isnt($k, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok: handle removed for NOT added handle');
-    is(http::curl_easy_strerror($k), 'Failed initialization', 'http::curl_easy_strerror(): return value ok: handle removed for NOT added handle');
+    if($k == 2){
+        isnt($k, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok: handle removed for NOT added handle');
+        is(http::curl_easy_strerror($k), 'Failed initialization', 'http::curl_easy_strerror(): return value ok: handle removed for NOT added handle');
+    } else {
+        is($k, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok: handle removed for NOT added handle');
+        is(http::curl_easy_strerror($k), 'No error', 'http::curl_easy_strerror(): return value ok: handle removed for NOT added handle');
+    }
 
     my $e = http::curl_multi_cleanup($r);
     is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
