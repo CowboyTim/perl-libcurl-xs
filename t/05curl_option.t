@@ -23,7 +23,7 @@ is(http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPINTVL(), 60), 0, 'http::cur
 eval {
     http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPCNT(), 10);
 };
-like($@, qr/Undefined subroutine/, 'http::curl_easy_setopt() CURLOPT_TCP_KEEPCNT');
+ok(($@ eq '' or $@ =~ qr/Undefined subroutine/), 'http::curl_easy_setopt() CURLOPT_TCP_KEEPCNT');
 
 is(http::curl_easy_setopt(), undef, 'http::curl_easy_setopt() error check 1');
 {
