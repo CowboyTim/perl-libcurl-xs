@@ -917,13 +917,19 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         SvREADONLY_on(sv);
         XPUSHs(sv);
 
+        // don't fetch CURLOPT_PRIVATE, curl_easy_duphandle copies it, but we
+        // won't do anything with it, as it's part of the original e_http
+        // handle: also DON'T clear that, just the ptr
         void *ptr = NULL;
         Newxz(ptr, 1, p_curl_easy);
         int d = curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
         if(d != CURLE_OK){
             croak("curl_easy_setopt CURLOPT_PRIVATE failed: %d", d);
         }
+        ((p_curl_easy *)ptr)->curle = SvRV(sv); // no need to increase refcount
         //printf("d: %lld, %p, %p\n", (long long)c, c, ptr);
+
+        // fetch from the original handle the FUNCTION opts
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){

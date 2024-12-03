@@ -99,7 +99,7 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
 
     my $en = http::getrusage();
     ok($en->{ru_maxrss} > $sz_min, 'http::getrusage() >min after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
-    ok($en->{ru_maxrss} < $sz_max+55000, 'http::getrusage() <max after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
+    ok($en->{ru_maxrss} < $sz_max+1000, 'http::getrusage() <max after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
     ok($en->{ru_maxrss} >= $st->{ru_maxrss}, 'http::getrusage() > http::getrusage(): >= rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
 }
 
