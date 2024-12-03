@@ -85,8 +85,8 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
         foreach my $i (1..100){
             my $m = http::curl_multi_init();
             foreach my $e (@lst){
-                my $c = http::curl_easy_duphandle($e);
-                $c or die 'http::curl_easy_duphandle() failed:'.$c;
+                my $c = http::curl_easy_duphandle($e)
+                    or die 'http::curl_easy_duphandle() failed'; 
                 my $r = http::curl_multi_add_handle($m, $c);
                 $r == http::CURLM_OK()
                     or die 'http::curl_multi_add_handle() failed:'.$r;
