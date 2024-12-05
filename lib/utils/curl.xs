@@ -71,12 +71,12 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
         return 0;
     void *p = NULL;
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(r != CURLE_OK || p == NULL || SvTYPE(((p_curl_easy *)p)->curle) != SVt_RV)
+    if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(((p_curl_easy *)p)->curle));
+    XPUSHs(((p_curl_easy *)p)->curle);
     XPUSHs(sv_2mortal(newSViv((IV)type)));
     XPUSHs(sv_2mortal(newSVpv(data, size)));
     PUTBACK;
@@ -189,12 +189,12 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
     return 0;
 }
 
-static int curl_interleavefunction_cb(void *p, int mask, int sock){
+static int curl_interleavefunction_cb(void *userp, int mask, int sock){
     dTHX;
     dSP;
-    if(p == NULL)
+    if(userp == NULL)
         return 0;
-    SV *cb = (SV*)p;
+    SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -219,12 +219,12 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
         return 0;
     void *p = NULL;
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(r != CURLE_OK || p == NULL || SvTYPE(((p_curl_easy *)p)->curle) != SVt_RV)
+    if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(((p_curl_easy *)p)->curle));
+    XPUSHs(((p_curl_easy *)p)->curle);
     XPUSHs(sv_2mortal(newSViv(cmd)));
     PUTBACK;
     call_sv(cb, G_DISCARD);
@@ -233,12 +233,12 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     return 0;
 }
 
-static int curl_fnmatchfunction_cb(void *p, const char *pattern, const char *string){
+static int curl_fnmatchfunction_cb(void *userp, const char *pattern, const char *string){
     dTHX;
     dSP;
-    if(p == NULL)
+    if(userp == NULL)
         return 0;
-    SV *cb = (SV*)p;
+    SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -257,21 +257,25 @@ static int curl_fnmatchfunction_cb(void *p, const char *pattern, const char *str
     return res;
 }
 
-static int curl_prereqfunction_cb(void *p, CURL *curl){
+static int curl_prereqfunction_cb(void *userp, CURL *handle){
     dTHX;
     dSP;
-    if(p == NULL)
+    if(userp == NULL)
         return 0;
-    SV *cb = (SV*)p;
+    SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
+        return 0;
+    void *p = NULL;
+    int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
+    if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)curl)));
+    XPUSHs(((p_curl_easy *)p)->curle);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
+    int rt = call_sv(cb, G_SCALAR);
+    if(rt != 1)
         return 0;
     SPAGAIN;
     int res = POPi;
@@ -280,12 +284,12 @@ static int curl_prereqfunction_cb(void *p, CURL *curl){
     return res;
 }
 
-static int curl_progressfunction_cb(void *p, double dltotal, double dlnow, double ultotal, double ulnow){
+static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, double ultotal, double ulnow){
     dTHX;
     dSP;
-    if(p == NULL)
+    if(userp == NULL)
         return 0;
-    SV *cb = (SV*)p;
+    SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -365,8 +369,7 @@ static int curl_resolver_start_function_cb(void *resolver_state, void *reserved,
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)resolver_state)));
-    XPUSHs(sv_2mortal(newSViv((IV)reserved)));
+    XPUSHs(sv_2mortal(newSViv(PTR2IV(resolver_state))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     if(r != 1)
