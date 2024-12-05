@@ -69,10 +69,14 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
+    void *p = NULL;
+    int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
+    if(r != CURLE_OK || p == NULL || SvTYPE(((p_curl_easy *)p)->curle) != SVt_RV)
+        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)handle)));
+    XPUSHs(sv_2mortal(((p_curl_easy *)p)->curle));
     XPUSHs(sv_2mortal(newSViv((IV)type)));
     XPUSHs(sv_2mortal(newSVpv(data, size)));
     PUTBACK;
@@ -93,7 +97,7 @@ static int curl_closesocketfunction_cb(void *clientp, curl_socket_t item){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)item)));
+    XPUSHs(sv_2mortal(newSViv((IV)(int)item)));
     PUTBACK;
     call_sv(cb, G_DISCARD);
     FREETMPS;
@@ -213,9 +217,14 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     SV *cb = (SV*)clientp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
+    void *p = NULL;
+    int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
+    if(r != CURLE_OK || p == NULL || SvTYPE(((p_curl_easy *)p)->curle) != SVt_RV)
+        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
+    XPUSHs(sv_2mortal(((p_curl_easy *)p)->curle));
     XPUSHs(sv_2mortal(newSViv(cmd)));
     PUTBACK;
     call_sv(cb, G_DISCARD);
@@ -405,8 +414,8 @@ static int curl_sockoptfunction_cb(void *clientp, curl_socket_t curlfd, curlsock
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)curlfd)));
-    XPUSHs(sv_2mortal(newSViv((IV)purpose)));
+    XPUSHs(sv_2mortal(newSViv(PTR2IV(curlfd))));
+    XPUSHs(sv_2mortal(newSViv(PTR2IV(purpose))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     if(r != 1)
@@ -429,7 +438,7 @@ static int curl_ssl_ctx_function_cb(CURL *curl, void *sslctx, void *userp){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)sslctx)));
+    XPUSHs(sv_2mortal(newSViv(PTR2IV(sslctx))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     if(r != 1)
@@ -449,12 +458,22 @@ static int curl_ssh_keyfunction_cb(CURL *curl, const struct curl_khkey *knownkey
     SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
+    if(knownkey == NULL || foundkey == NULL)
+        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)knownkey)));
-    XPUSHs(sv_2mortal(newSViv((IV)foundkey)));
-    XPUSHs(sv_2mortal(newSViv((IV)khmatch)));
+    if(knownkey->key)
+        if(knownkey->len)
+            XPUSHs(sv_2mortal(newSVpv(knownkey->key, knownkey->len)));
+        else
+            XPUSHs(sv_2mortal(newSVpv(knownkey->key, 0)));
+    if(foundkey->key)
+        if(foundkey->len)
+            XPUSHs(sv_2mortal(newSVpv(foundkey->key, foundkey->len)));
+        else
+            XPUSHs(sv_2mortal(newSVpv(foundkey->key, 0)));
+    XPUSHs(sv_2mortal(newSViv((int)(IV)khmatch)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     if(r != 1)
