@@ -736,6 +736,8 @@ void L_curl_easy_strerror(int code)
 void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
         int r = -1;
+        struct curl_slist *_vs = NULL;
+        AV *av = NULL;
     PPCODE:
         dTHX;
         dSP;
@@ -761,8 +763,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_RESOLVE:
                 case CURLOPT_PROXYHEADER:
                 case CURLOPT_CONNECT_TO:
-                    struct curl_slist *_vs = NULL;
-                    AV *av = (AV *)SvRV(value);
+                    av = (AV *)SvRV(value);
                     for(int i=0; i<=av_len(av); i++){
                         SV **sv = av_fetch(av, i, 0);
                         if(sv && SvPOK(*sv)){
