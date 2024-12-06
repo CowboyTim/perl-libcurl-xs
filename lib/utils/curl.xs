@@ -655,14 +655,18 @@ void L_curl_version_info(...)
         if(!vi)
             XSRETURN_UNDEF;
         rh = (HV *)sv_2mortal((SV *)newHV());
-        hv_store(rh, "version"       , 7, newSVpv(vi->version       , 0), 0);
-        hv_store(rh, "version_num"   , 11, newSViv(vi->version_num)   , 0);
-        hv_store(rh, "host"          , 4, newSVpv(vi->host          , 0), 0);
-        hv_store(rh, "features"      , 8, newSViv(vi->features      ) , 0);
-        hv_store(rh, "ssl_version"   , 11, newSVpv(vi->ssl_version   , 0), 0);
-        hv_store(rh, "ssl_version_num", 15, newSViv(vi->ssl_version_num), 0);
-        hv_store(rh, "libz_version"  , 12, newSVpv(vi->libz_version  , 0), 0);
-        hv_store(rh, "protocols"     , 9, newSVpv((char *)vi->protocols     , 0), 0);
+        hv_store(rh, "version"        ,  7, newSVpv(vi->version, 0)          , 0);
+        hv_store(rh, "version_num"    , 11, newSViv(vi->version_num)         , 0);
+        hv_store(rh, "host"           ,  4, newSVpv(vi->host, 0)             , 0);
+        hv_store(rh, "features"       ,  8, newSViv(vi->features)            , 0);
+        hv_store(rh, "ssl_version"    , 11, newSVpv(vi->ssl_version, 0)      , 0);
+        hv_store(rh, "ssl_version_num", 15, newSViv(vi->ssl_version_num)     , 0);
+        hv_store(rh, "libz_version"   , 12, newSVpv(vi->libz_version, 0)     , 0);
+        AV *protocols = newAV();
+        for(int i=0; vi->protocols[i]; i++){
+            av_push(protocols, newSVpv(vi->protocols[i], 0));
+        }
+        hv_store(rh, "protocols"      ,  9, newRV_inc((SV *)protocols)       , 0);
         XPUSHs(newRV_inc((SV *)rh));
 
 void L_curl_version(...)
