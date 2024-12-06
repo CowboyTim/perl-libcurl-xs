@@ -1,4 +1,4 @@
-use Test::More tests => 18;
+use Test::More tests => 9;
 use strict; use warnings;
 
 use FindBin;
@@ -10,13 +10,13 @@ my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
 my $r = http::curl_easy_init();
 my $k;
-$k |= http::curl_easy_setopt($r, http::CURLOPT_URL(), 'wss://example.com');
+$k |= http::curl_easy_setopt($r, http::CURLOPT_URL(), 'wss://echo.websocket.org');
+$k |= http::curl_easy_setopt($r, http::CURLOPT_CONNECT_ONLY(), 2);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_HTTPHEADER(), [
     'Upgrade: websocket',
     'Connection: Upgrade',
     'Sec-WebSocket-Key: '.$ws_key,
     'Sec-WebSocket-Version: 13',
-    'Origin: https://echo.websocket.org',
     'Sec-WebSocket-Protocol: chat, superchat',
 ]);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_VERBOSE(), 1);
@@ -43,10 +43,21 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
 });
 is($k, http::CURLE_OK(), 'curl_easy_setopt');
 $k |= http::curl_easy_perform($r);
-is($k, http::CURLE_OK(), 'curl_easy_perform');
-$k |= http::curl_ws_send($r, 'Hello, world!');
-is($k, http::CURLE_OK(), 'curl_ws_send: '.http::curl_easy_strerror($k));
-$k |= http::curl_ws_recv($r, 'Hello, world!');
-is($k, http::CURLE_OK(), 'curl_ws_recv: '.http::curl_easy_strerror($k));
-$k |= http::curl_easy_cleanup($r);
-is($k, http::CURLE_OK(), 'curl_easy_cleanup');
+is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
+
+{
+    $k |= http::curl_ws_recv($r, my $recv_data, 100, my $ws_frame);
+    is($k, http::CURLE_OK(), 'curl_ws_recv: '.http::curl_easy_strerror($k));
+    like($recv_data, qr/^Request served by \d+/, 'recv_data: '.($recv_data//"undef"));
+    is_deeply($ws_frame, {flags => 1, bytesleft => 0, age => 0, offset => 0}, 'ws_frame');
+}
+{
+    $k |= http::curl_ws_send($r, 'Hello, world! '.time()."\n", 1);
+    is($k, http::CURLE_OK(), 'curl_ws_send: '.http::curl_easy_strerror($k));
+    $k |= http::curl_ws_recv($r, my $recv_data, 100);
+    is($k, http::CURLE_OK(), 'curl_ws_recv: '.http::curl_easy_strerror($k));
+    like($recv_data, qr/^Request served by \d+/, 'recv_data: '.($recv_data//"undef"));
+}
+
+
+http::curl_easy_cleanup($r);
