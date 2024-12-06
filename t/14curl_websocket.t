@@ -19,8 +19,8 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_HTTPHEADER(), [
     'Sec-WebSocket-Version: 13',
     'Sec-WebSocket-Protocol: chat, superchat',
 ]);
-$k |= http::curl_easy_setopt($r, http::CURLOPT_VERBOSE(), 1);
-$k |= http::curl_easy_setopt($r, http::CURLOPT_HEADER(), 1);
+$k |= http::curl_easy_setopt($r, http::CURLOPT_VERBOSE(), 0);
+$k |= http::curl_easy_setopt($r, http::CURLOPT_HEADER(), 0);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_NOPROGRESS(), 1);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_NOBODY(), 0);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_FOLLOWLOCATION(), 1);
