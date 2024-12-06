@@ -8,7 +8,7 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
-#define THISSvOK(sv) (sv != NULL && SvROK(sv) && SvRV(sv) != &PL_sv_undef && INT2PTR(void *, SvIV(SvRV(sv))) != NULL)
+#define THISSvOK(sv) (sv != NULL && SvROK(sv) && SvOK(SvRV(sv)) && INT2PTR(void *, SvIV(SvRV(sv))) != NULL)
 #define THIS(sv)   INT2PTR(void *, SvIV(SvRV(sv)))
 
 #define MAX_CB 20
@@ -1158,18 +1158,20 @@ void L_curl_easy_recv(SV *e_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0)
         dSP;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        if(!data || !SvPOK(data) || data == &PL_sv_undef)
-            XSRETURN_UNDEF;
         if(max_sz == 0)
             XSRETURN_IV(0);
-        SV *buf = newSV(max_sz);
+        SV *buf = (SV*)sv_2mortal(newSV(max_sz));
         SvPOK_only(buf);
-        r = curl_easy_recv((CURL *)THIS(e_http), SvPV_nolen(buf), max_sz, &recv_sz);
+        r = curl_easy_recv((CURL *)THIS(e_http), SvPVX(buf), max_sz, &recv_sz);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
-        buf = sv_2mortal(buf);
         SvCUR_set(buf, recv_sz);
-        sv_catsv_nomg(data, buf);
+        if(data){
+            if(!SvOK(data))
+                sv_setsv(data, buf);
+            else
+                sv_catpvn(data, SvPVX(buf), recv_sz);
+        }
         XSRETURN_IV(0);
 
 void L_curl_multi_init()
@@ -1638,7 +1640,7 @@ void W_curl_ws_meta(SV *ws_http=NULL)
         hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
         XPUSHs(newRV((SV*)rh));
 
-void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0, SV *hv_meta=NULL)
+void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv_meta=NULL)
     PREINIT:
         int r = 0;
         size_t recv_sz = 0;
@@ -1647,25 +1649,28 @@ void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0, SV *hv
         dSP;
         if(!THISSvOK(ws_http))
             XSRETURN_UNDEF;
-        if(!data || !SvPOK(data) || data == &PL_sv_undef)
-            XSRETURN_UNDEF;
-        if(max_sz == 0)
-            XSRETURN_IV(0);
         const struct curl_ws_frame *w = NULL;
-        SV *buf = newSV(max_sz);
+        SV *buf = (SV*)sv_2mortal((SV*)newSV(max_sz));
         SvPOK_only(buf);
-        r = curl_ws_recv((CURL *)THIS(ws_http), SvPV_nolen(buf), max_sz, &recv_sz, &w);
+        r = curl_ws_recv((CURL *)THIS(ws_http), SvPVX(buf), max_sz, &recv_sz, &w);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
-        buf = sv_2mortal(buf);
         SvCUR_set(buf, recv_sz);
-        sv_catsv_nomg(data, buf);
-        HV *rh = (HV*)sv_2mortal((SV*)newHV());
-        hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
-        hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
-        hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
-        hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
-        SvRV_set(hv_meta, newRV((SV*)rh));
+        if(data){
+            if(!SvOK(data))
+                sv_setsv(data, buf);
+            else
+                sv_catsv_nomg(data, buf);
+        }
+        if(hv_meta && w){
+            printf("w: %p\n", w);
+            HV *rh = (HV*)sv_2mortal((SV*)newHV());
+            hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
+            hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
+            hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
+            hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
+            sv_setsv(hv_meta, newRV((SV*)rh));
+        }
         XSRETURN_IV(r);
 
 void W_curl_ws_send(SV *ws_http=NULL, SV *data=&PL_sv_undef, int ws_code=CURLWS_BINARY)
