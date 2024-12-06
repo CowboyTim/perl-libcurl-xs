@@ -357,10 +357,10 @@ static int curl_writefunction_cb(void *buffer, size_t size, size_t nitems, void 
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(newSVpv(buffer, size*nitems)));
     PUTBACK;
-    int r = call_sv(cb, G_DISCARD);
+    int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
+    if(r >= 1)
         res = POPi;
     FREETMPS;
     LEAVE;
