@@ -19,7 +19,7 @@ use_ok('utils::curl', qw());
     like($r1->{libz_version}, qr/\d+\.\d+\.\d+/, 'http::curl_version_info() return libz version: '.$r1->{libz_version});
     like($r1->{host}, qr/\w+/, 'http::curl_version_info() return host: '.$r1->{host});
     like($r1->{features}, qr/\d+/, 'http::curl_version_info() return features: '.$r1->{features});
-    like($r1->{protocols}, qr/\w+/, 'http::curl_version_info() return protocols: '.$r1->{protocols});
+    isnt(scalar @{$r1->{protocols}}, 0, 'http::curl_version_info() return protocols: '.join(",", sort @{$r1->{protocols}}));
 
 }
 
