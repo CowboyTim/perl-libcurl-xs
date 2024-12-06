@@ -1663,7 +1663,6 @@ void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv
                 sv_catsv_nomg(data, buf);
         }
         if(hv_meta && w){
-            printf("w: %p\n", w);
             HV *rh = (HV*)sv_2mortal((SV*)newHV());
             hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
             hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
