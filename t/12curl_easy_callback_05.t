@@ -14,7 +14,7 @@ use_ok('utils::curl', qw());
     http::curl_easy_setopt($e, http::CURLOPT_HEADER(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), my $abc = "");
-    is($sod, undef, 'http::curl_easy_setopt() return undef, we didnt provide a sub');
+    is($sod, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
     my $r = http::curl_easy_cleanup($e);
     is($r, undef, 'http::curl_easy_cleanup() return undef');
 }
@@ -26,7 +26,7 @@ use_ok('utils::curl', qw());
     http::curl_easy_setopt($e, http::CURLOPT_HEADER(), 0);
     http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     my $sod = http::curl_easy_setopt($e, http::CURLOPT_DEBUGFUNCTION(), my $abc = \(""));
-    is($sod, undef, 'http::curl_easy_setopt() return undef, we didnt provide a sub');
+    is($sod, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
     my $r = http::curl_easy_cleanup($e);
     is($r, undef, 'http::curl_easy_cleanup() return undef');
 }
