@@ -123,13 +123,15 @@ static int curl_opensocketfunction_cb(void *clientp, curlsocktype purpose, struc
     XPUSHs(sv_2mortal(newSViv((IV)address->addrlen)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return CURL_SOCKET_BAD;
     SPAGAIN;
-    int sock = POPi;
+    int sock = 0;
+    if(r == 1)
+        sock = POPi;
     FREETMPS;
     LEAVE;
-    return sock;
+    if(r == 1)
+        return sock;
+    return CURL_SOCKET_BAD;
 }
 
 static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *userp){
@@ -248,10 +250,10 @@ static int curl_fnmatchfunction_cb(void *userp, const char *pattern, const char 
     XPUSHs(sv_2mortal(newSVpv(string, 0)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -275,10 +277,10 @@ static int curl_prereqfunction_cb(void *userp, CURL *handle){
     XPUSHs(((p_curl_easy *)p)->curle);
     PUTBACK;
     int rt = call_sv(cb, G_SCALAR);
-    if(rt != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(rt == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -301,10 +303,10 @@ static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, d
     XPUSHs(sv_2mortal(newSVnv(ulnow)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -328,8 +330,11 @@ static int curl_readfunction_cb(void *buffer, size_t size, size_t nitems, void *
         return 0;
     SPAGAIN;
     SV *sv = POPs;
-    if(!SvPOK(sv))
+    if(!SvPOK(sv)){
+        FREETMPS;
+        LEAVE;
         return 0;
+    }
     size_t len = SvCUR(sv);
     if(len > size*nitems)
         len = size*nitems;
@@ -352,10 +357,14 @@ static int curl_writefunction_cb(void *buffer, size_t size, size_t nitems, void 
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(newSVpv(buffer, size*nitems)));
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    int r = call_sv(cb, G_DISCARD);
+    SPAGAIN;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
-    return size*nitems;
+    return res;
 }
 
 static int curl_resolver_start_function_cb(void *resolver_state, void *reserved, void *userp){
@@ -372,15 +381,14 @@ static int curl_resolver_start_function_cb(void *resolver_state, void *reserved,
     XPUSHs(sv_2mortal(newSViv(PTR2IV(resolver_state))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
 }
-
 
 static int curl_seekfunction_cb(void *userp, curl_off_t offset, int origin){
     dTHX;
@@ -397,10 +405,10 @@ static int curl_seekfunction_cb(void *userp, curl_off_t offset, int origin){
     XPUSHs(sv_2mortal(newSViv((IV)origin)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -421,10 +429,10 @@ static int curl_sockoptfunction_cb(void *clientp, curl_socket_t curlfd, curlsock
     XPUSHs(sv_2mortal(newSViv(PTR2IV(purpose))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -444,10 +452,10 @@ static int curl_ssl_ctx_function_cb(CURL *curl, void *sslctx, void *userp){
     XPUSHs(sv_2mortal(newSViv(PTR2IV(sslctx))));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -479,10 +487,10 @@ static int curl_ssh_keyfunction_cb(CURL *curl, const struct curl_khkey *knownkey
     XPUSHs(sv_2mortal(newSViv((int)(IV)khmatch)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -524,10 +532,10 @@ static int curl_xferinfofunction_cb(void *p, curl_off_t dltotal, curl_off_t dlno
     XPUSHs(sv_2mortal(newSViv((IV)ulnow)));
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
-    if(r != 1)
-        return 0;
     SPAGAIN;
-    int res = POPi;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
     return res;
@@ -736,22 +744,46 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         if(value == NULL)
             XSRETURN_UNDEF;
 
-        if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
+        if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT
+            || c_opt == CURLOPTTYPE_VALUES){
             long _vl = (long)SvIV(value);
-        //printf("p1: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
-        } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
-            if(!SvPOK(value))
-                XSRETURN_UNDEF;
-        //printf("p2: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
-            char *_vc = (char *)SvPV_nolen(value);
-            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
-        } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
+        } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT
+                && c_opt != CURLOPTTYPE_CBPOINT){
+            switch(c_opt){
+                case CURLOPT_HTTPHEADER:
+                case CURLOPT_QUOTE:
+                case CURLOPT_POSTQUOTE:
+                case CURLOPT_TELNETOPTIONS:
+                case CURLOPT_PREQUOTE:
+                case CURLOPT_HTTP200ALIASES:
+                case CURLOPT_MAIL_RCPT:
+                case CURLOPT_RESOLVE:
+                case CURLOPT_PROXYHEADER:
+                case CURLOPT_CONNECT_TO:
+                    struct curl_slist *_vs = NULL;
+                    AV *av = (AV *)SvRV(value);
+                    for(int i=0; i<=av_len(av); i++){
+                        SV **sv = av_fetch(av, i, 0);
+                        if(sv && SvPOK(*sv)){
+                            _vs = curl_slist_append(_vs, SvPV_nolen(*sv));
+                        }
+                    }
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vs);
+                    break;
+                default:
+                    if(!SvPOK(value))
+                        XSRETURN_UNDEF;
+                    char *_vc = (char *)SvPV_nolen(value);
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
+                    break;
+            }
+        } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T
+                || c_opt == CURLOPTTYPE_CBPOINT){
             int cb_indx = -1;
             if(!SvROK(value))
                 XSRETURN_UNDEF;
             SV *cb = SvRV(value);
-            //printf("CALLBACK: %p, %p, %d, %d, %d\n", cb, value, SvTYPE(cb), SvTYPE(value), SVt_PVCV);
             if(SvTYPE(cb) != SVt_PVCV)
                 XSRETURN_UNDEF;
             // deprecated, same as CURLOPT_XFERINFOFUNCTION, even the defined value
@@ -1590,15 +1622,11 @@ MODULE = utils::curl                PACKAGE = http             PREFIX = W_
 VERSIONCHECK: DISABLE
 PROTOTYPES: DISABLE
 
-void W_curl_ws_meta(SV *ws_http=NULL, SV *key=NULL, SV *value=NULL)
+void W_curl_ws_meta(SV *ws_http=NULL)
     PPCODE:
         dTHX;
         dSP;
         if(!THISSvOK(ws_http))
-            XSRETURN_UNDEF;
-        if(!key || !SvPOK(key))
-            XSRETURN_UNDEF;
-        if(!value || !SvPOK(value))
             XSRETURN_UNDEF;
         const struct curl_ws_frame *w = curl_ws_meta((CURL *)THIS(ws_http));
         if(!w)
@@ -1640,7 +1668,7 @@ void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0, SV *hv
         SvRV_set(hv_meta, newRV((SV*)rh));
         XSRETURN_IV(r);
 
-void W_curl_ws_send(SV *ws_http=NULL, SV *data=&PL_sv_undef, int ws_code=0)
+void W_curl_ws_send(SV *ws_http=NULL, SV *data=&PL_sv_undef, int ws_code=CURLWS_BINARY)
     PREINIT:
         int r = 0;
         size_t sent_sz = 0;
