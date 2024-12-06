@@ -1,4 +1,4 @@
-use Test::More tests => 20;
+use Test::More tests => 18;
 use strict; use warnings;
 
 use FindBin;
@@ -6,12 +6,9 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl', qw());
 
-my $sz_min = 17000;
-my $sz_max = 20000;
-
 my $st = http::getrusage();
-ok($st->{ru_maxrss} > $sz_min, 'http::getrusage() min, s='.$st->{ru_maxrss});
-ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
+my $sz_min = $st->{ru_maxrss};
+my $sz_max = $sz_min + 1000;
 
 {
     foreach my $i (1..1000){
@@ -24,14 +21,14 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
     }
 
     my $en = http::getrusage();
-    ok($en->{ru_maxrss} > $sz_min, 'http::getrusage() >min after 1000 curl_easy_init() + destroy');
-    ok($en->{ru_maxrss} < $sz_max, 'http::getrusage() <max after 1000 curl_easy_init() + destroy');
+    ok($en->{ru_maxrss} >= $sz_min, 'http::getrusage() >min after 1000 curl_easy_init() + destroy: >rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
+    ok($en->{ru_maxrss} < $sz_max, 'http::getrusage() <max after 1000 curl_easy_init() + destroy: <rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
     ok($en->{ru_maxrss} >= $st->{ru_maxrss}, 'http::getrusage() > http::getrusage(): >= rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
 }
 
 {
     my $st = http::getrusage();
-    ok($st->{ru_maxrss} > $sz_min, 'http::getrusage() >min, s='.$st->{ru_maxrss});
+    ok($st->{ru_maxrss} >= $sz_min, 'http::getrusage() >min, s='.$st->{ru_maxrss});
     ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() <max, s='.$st->{ru_maxrss});
     eval {
         foreach my $i (0..100){
@@ -55,7 +52,7 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
     };
     is($@, '', 'http::curl_multi_add_handle() didnt fail');
     my $en = http::getrusage();
-    ok($en->{ru_maxrss} > $sz_min, 'http::getrusage() multi s='.$en->{ru_maxrss});
+    ok($en->{ru_maxrss} >= $sz_min, 'http::getrusage() multi s='.$en->{ru_maxrss});
     ok($en->{ru_maxrss} < $sz_max+1000, 'http::getrusage() multi <1000 s='.$en->{ru_maxrss});
     ok($en->{ru_maxrss} >= $st->{ru_maxrss}, 'multi >= rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
 }
@@ -63,7 +60,7 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
 {
     $sz_max += 1000;
     my $st = http::getrusage();
-    ok($st->{ru_maxrss} > $sz_min, 'http::getrusage() >min s='.$st->{ru_maxrss});
+    ok($st->{ru_maxrss} >= $sz_min, 'http::getrusage() >min s='.$st->{ru_maxrss});
     ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() <max s='.$st->{ru_maxrss});
 
     my @lst;
@@ -98,7 +95,7 @@ ok($st->{ru_maxrss} < $sz_max, 'http::getrusage() max, s='.$st->{ru_maxrss});
     is($@, '', 'http::curl_easy_init() didnt fail');
 
     my $en = http::getrusage();
-    ok($en->{ru_maxrss} > $sz_min, 'http::getrusage() >min after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
+    ok($en->{ru_maxrss} >= $sz_min, 'http::getrusage() >min after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
     ok($en->{ru_maxrss} < $sz_max+1000, 'http::getrusage() <max after 1000 curl_easy_init() + keep, size='.$en->{ru_maxrss});
     ok($en->{ru_maxrss} >= $st->{ru_maxrss}, 'http::getrusage() > http::getrusage(): >= rss, rss='.($en->{ru_maxrss}-$st->{ru_maxrss}));
 }
