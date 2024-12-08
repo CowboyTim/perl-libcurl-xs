@@ -78,6 +78,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
+    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -228,6 +229,7 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
+    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -276,6 +278,7 @@ static int curl_prereqfunction_cb(void *userp, CURL *handle){
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
+    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -1434,6 +1437,7 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
             int r = curl_easy_getinfo(e[i], CURLINFO_PRIVATE, &p);
             if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
                 continue;
+            SvREFCNT_inc(((p_curl_easy *)p)->curle);
             av_push(av, ((p_curl_easy *)p)->curle);
         }
         curl_free(e);
@@ -1457,7 +1461,6 @@ void M_DESTROY(SV *m_http=NULL)
         //printf("destroy_multi: %p\n", (CURLM *)THIS(m_http));
         // get all handles and remove them
 #if (LIBCURL_VERSION_NUM >= 0x080400)
-        //printf("destroy_multi_handles: %p\n", SvRV(m_http));
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(e){
             for(int i=0; e[i]; i++){
@@ -1465,7 +1468,7 @@ void M_DESTROY(SV *m_http=NULL)
                 void *p = NULL;
                 int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
                 if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
-                    SvREFCNT_dec((SV *)((p_curl_easy *)p)->curle);
+                    SvREFCNT_dec(((p_curl_easy *)p)->curle);
                 }
             }
         }
