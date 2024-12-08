@@ -1465,7 +1465,7 @@ void M_DESTROY(SV *m_http=NULL)
                 void *p = NULL;
                 int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
                 if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
-                    SvREFCNT_dec(((p_curl_easy *)p)->curle);
+                    SvREFCNT_dec(SvRV(((p_curl_easy *)p)->curle));
                 }
             }
         }
