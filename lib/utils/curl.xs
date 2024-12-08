@@ -78,7 +78,6 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
-    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -229,7 +228,6 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
-    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -278,7 +276,6 @@ static int curl_prereqfunction_cb(void *userp, CURL *handle){
     int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
         return 0;
-    SvREFCNT_inc((SV *)((p_curl_easy *)p)->curle);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
