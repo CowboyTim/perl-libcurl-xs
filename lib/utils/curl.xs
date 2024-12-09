@@ -874,6 +874,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_XFERINFODATA:
                 case CURLOPT_SEEKDATA:
                 case CURLOPT_PREREQDATA:
+                    XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                     break;
                 default:
                     if(!SvPOK(dt))
@@ -897,7 +898,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     cb = NULL;
                 else
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
-            // deprecated, so make same as CURLOPT_XFERINFOFUNCTION
             switch(c_opt){
                 case CURLOPT_HEADERFUNCTION:
                     cb_indx = CB_HEADERFUNCTION;
@@ -975,17 +975,19 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     break;
                 default:
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
+                    break;
             }
             SV *cb_orig = NULL;
             r = cb_setup((CURL *)THIS(e_http), c_opt, cb_indx, cb_func, cb, &cb_orig);
             // first increase refcount, then decrease the old one, else we
             // might GC the object while we are just reusing the same var
-            //printf("r: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
+            //printf("r1: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
             if(r == CURLE_OK)
                 if(cb)
                     SvREFCNT_inc(cb);
             if(cb_orig)
                 SvREFCNT_dec(cb_orig);
+            //printf("r2: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
             long _vo = (curl_off_t)SvIV(value);
         //printf("p3: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
@@ -993,6 +995,9 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         } else {
             XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
         }
+        //printf("r3: %d\n", r);
+        if(r == -1)
+            XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(r);
