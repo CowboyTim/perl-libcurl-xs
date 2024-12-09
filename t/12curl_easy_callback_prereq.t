@@ -117,17 +117,15 @@ use_ok('utils::curl', qw());
     http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = sub {
         my ($p_ip, $l_ip, $p_port, $l_port) = @_;
-        $k_cnt+=1;
+        die;
         return http::CURL_PREREQFUNC_OK();
     });
     $abc = undef;
-    foreach my $i (1..100){
-        $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
-            my ($p_ip, $l_ip, $p_port, $l_port) = @_;
-            $k_cnt+=1;
-            return http::CURL_PREREQFUNC_OK();
-        });
-    }
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
+        my ($p_ip, $l_ip, $p_port, $l_port) = @_;
+        $k_cnt+=1;
+        return http::CURL_PREREQFUNC_OK();
+    });
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     $k |= http::curl_easy_perform($e);
     is($k_cnt, 1, 'callback function called: ok successes:'.$k_cnt);
