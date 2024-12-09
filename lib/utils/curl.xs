@@ -25,7 +25,7 @@ enum perl_cb_function {
     CB_HSTSWRITEFUNCTION,
     CB_INTERLEAVEFUNCTION,
     CB_IOCTLFUNCTION,
-    CB_FNMATCHFUNCTION,
+    CB_FNMATCH_FUNCTION,
     CB_PREREQFUNCTION,
     CB_PROGRESSFUNCTION,
     CB_READFUNCTION,
@@ -54,10 +54,14 @@ int cb_setup(CURL *e_http, int c_opt, int c_opt_f, void *cb_f, SV *cb, SV **pt){
         pp = &(((p_curl_easy *)p)->cb[c_opt_f]);
         *pt = *pp;
     }
-    *pp = cb;
     if(cb){
         r = curl_easy_setopt(e_http, c_opt, cb_f);
+        if(r == CURLE_OK)
+            *pp = cb;
+        else
+            *pp = NULL;
     } else {
+        *pp = NULL;
         r = curl_easy_setopt(e_http, c_opt, NULL);
     }
     return r;
@@ -72,10 +76,15 @@ int cd_setup(CURL *e_http, int c_opt, int c_opt_d, SV *value, SV **pt){
         pp = &(((p_curl_easy *)p)->cd[c_opt_d]);
         *pt = *pp;
     }
-    *pp = value;
     if(value){
+        *pp = value;
         r = curl_easy_setopt(e_http, c_opt, (SV *)value);
+        if(r == CURLE_OK)
+            *pp = value;
+        else
+            *pp = NULL;
     } else {
+        *pp = NULL;
         r = curl_easy_setopt(e_http, c_opt, NULL);
     }
     return r;
@@ -899,6 +908,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     cb = NULL;
                 else
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
+            int t = -1;
             switch(c_opt){
                 case CURLOPT_HEADERFUNCTION:
                     cb_indx = CB_HEADERFUNCTION;
@@ -925,8 +935,14 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     cb_func = curl_ioctlfunction_cb;
                     break;
                 case CURLOPT_FNMATCH_FUNCTION:
-                    cb_indx = CB_FNMATCHFUNCTION;
+                    cb_indx = CB_FNMATCH_FUNCTION;
                     cb_func = curl_fnmatchfunction_cb;
+                    t = cd_setup((CURL *)THIS(e_http), CURLOPT_FNMATCH_DATA, cb_indx, cb, &p);
+                    if(t == CURLE_OK)
+                        if(cb)
+                            SvREFCNT_inc(cb);
+                    if(p)
+                        SvREFCNT_dec(p);
                     break;
                 case CURLOPT_TRAILERFUNCTION:
                     cb_indx = CB_TRAILERFUNCTION;
@@ -967,7 +983,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_PREREQFUNCTION:
                     cb_indx = CB_PREREQFUNCTION;
                     cb_func = curl_prereqfunction_cb;
-                    int t = cd_setup((CURL *)THIS(e_http), CURLOPT_PREREQDATA, CB_PREREQFUNCTION, cb, &p);
+                    t = cd_setup((CURL *)THIS(e_http), CURLOPT_PREREQDATA, cb_indx, cb, &p);
                     if(t == CURLE_OK)
                         if(cb)
                             SvREFCNT_inc(cb);
@@ -983,9 +999,10 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             // first increase refcount, then decrease the old one, else we
             // might GC the object while we are just reusing the same var
             //printf("r1: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
-            if(r == CURLE_OK)
+            if(r == CURLE_OK){
                 if(cb)
                     SvREFCNT_inc(cb);
+            }
             if(cb_orig)
                 SvREFCNT_dec(cb_orig);
             //printf("r2: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
