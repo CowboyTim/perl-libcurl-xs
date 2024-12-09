@@ -45,17 +45,20 @@ typedef struct {
     SV *cd[MAX_CB];
 } p_curl_easy;
 
-int cb_setup(CURL *e_http, int c_opt_f, void *cb_f, SV *cb_d){
+int cb_setup(CURL *e_http, int c_opt, int c_opt_f, void *cb_f, SV *cb, SV **pt){
     int r = 0;
-    if(!cb_f){
-        r = curl_easy_setopt(e_http, c_opt_f, NULL);
-        return r;
+    void *p = NULL;
+    SV **pp = NULL;
+    int t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
+    if(t == CURLE_OK && p){
+        pp = &(((p_curl_easy *)p)->cb[c_opt_f]);
+        *pt = *pp;
     }
-    r = curl_easy_setopt(e_http, c_opt_f, cb_f);
-    if(r != CURLE_OK){
-        curl_easy_setopt(e_http, c_opt_f, NULL);
-        // ignore this return and return the original error
-        return r;
+    *pp = cb;
+    if(cb){
+        r = curl_easy_setopt(e_http, c_opt, cb_f);
+    } else {
+        r = curl_easy_setopt(e_http, c_opt, NULL);
     }
     return r;
 }
@@ -69,8 +72,8 @@ int cd_setup(CURL *e_http, int c_opt, int c_opt_d, SV *value, SV **pt){
         pp = &(((p_curl_easy *)p)->cd[c_opt_d]);
         *pt = *pp;
     }
+    *pp = value;
     if(value){
-        *pp = value;
         r = curl_easy_setopt(e_http, c_opt, (SV *)value);
     } else {
         r = curl_easy_setopt(e_http, c_opt, NULL);
@@ -799,6 +802,9 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             SV *p = NULL;
+            SV *dt = NULL;
+            if(value && SvOK(value))
+                dt = value;
             switch(c_opt){
                 case CURLOPT_HTTPHEADER:
                 case CURLOPT_QUOTE:
@@ -810,7 +816,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_RESOLVE:
                 case CURLOPT_PROXYHEADER:
                 case CURLOPT_CONNECT_TO:
-                    av = (AV *)SvRV(value);
+                    av = (AV *)SvRV(dt);
                     for(int i=0; i<=av_len(av); i++){
                         SV **sv = av_fetch(av, i, 0);
                         if(sv && SvPOK(*sv)){
@@ -820,32 +826,36 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vs);
                     break;
                 case CURLOPT_DEBUGDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_DEBUGFUNCTION, value, &p);
+                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_DEBUGFUNCTION, dt, &p);
                     // first increase refcount, then decrease the old one, else we
                     // might GC the object while we are just reusing the same var
                     if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
+                        if(dt)
+                            SvREFCNT_inc(dt);
                     if(p)
                         SvREFCNT_dec(p);
                     break;
                 case CURLOPT_IOCTLDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_IOCTLFUNCTION, value, &p);
+                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_IOCTLFUNCTION, dt, &p);
                     if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
+                        if(dt)
+                            SvREFCNT_inc(dt);
                     if(p)
                         SvREFCNT_dec(p);
                     break;
                 case CURLOPT_SSH_KEYDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SSH_KEYFUNCTION, value, &p);
+                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SSH_KEYFUNCTION, dt, &p);
                     if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
+                        if(dt)
+                            SvREFCNT_inc(dt);
                     if(p)
                         SvREFCNT_dec(p);
                     break;
                 case CURLOPT_SSL_CTX_DATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SSL_CTX_FUNCTION, value, &p);
+                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SSL_CTX_FUNCTION, dt, &p);
                     if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
+                        if(dt)
+                            SvREFCNT_inc(dt);
                     if(p)
                         SvREFCNT_dec(p);
                     break;
@@ -866,9 +876,9 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_PREREQDATA:
                     break;
                 default:
-                    if(!SvPOK(value))
+                    if(!SvPOK(dt))
                         XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
-                    char *_vc = (char *)SvPV_nolen(value);
+                    char *_vc = (char *)SvPV_nolen(dt);
                     r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
                     break;
             }
@@ -877,6 +887,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             // NULL clears the FUNCTION/DATA combination
             SV *cb = NULL;
             SV *p = NULL;
+            void *cb_func = NULL;
             if(value && SvROK(value) && SvTYPE(SvRV(value)) == SVt_PVCV)
                 cb = SvRV(value);
             if(value && SvROK(value) && SvTYPE(SvRV(value)) != SVt_PVCV)
@@ -889,101 +900,92 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             // deprecated, so make same as CURLOPT_XFERINFOFUNCTION
             switch(c_opt){
                 case CURLOPT_HEADERFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_HEADERFUNCTION, curl_headerfunction_cb, cb);
                     cb_indx = CB_HEADERFUNCTION;
+                    cb_func = curl_headerfunction_cb;
                     break;
                 case CURLOPT_DEBUGFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_DEBUGFUNCTION, curl_debugfunction_cb, cb);
                     cb_indx = CB_DEBUGFUNCTION;
+                    cb_func = curl_debugfunction_cb;
                     break;
                 case CURLOPT_HSTSREADFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_HSTSREADFUNCTION, curl_hstsreadfunction_cb, cb);
                     cb_indx = CB_HSTSREADFUNCTION;
+                    cb_func = curl_hstsreadfunction_cb;
                     break;
                 case CURLOPT_HSTSWRITEFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_HSTSWRITEFUNCTION, curl_hstswritefunction_cb, cb);
                     cb_indx = CB_HSTSWRITEFUNCTION;
+                    cb_func = curl_hstswritefunction_cb;
                     break;
                 case CURLOPT_INTERLEAVEFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_INTERLEAVEFUNCTION, curl_interleavefunction_cb, cb);
                     cb_indx = CB_INTERLEAVEFUNCTION;
+                    cb_func = curl_interleavefunction_cb;
                     break;
                 case CURLOPT_IOCTLFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_IOCTLFUNCTION, curl_ioctlfunction_cb, cb);
                     cb_indx = CB_IOCTLFUNCTION;
+                    cb_func = curl_ioctlfunction_cb;
                     break;
                 case CURLOPT_FNMATCH_FUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_FNMATCH_FUNCTION, curl_fnmatchfunction_cb, cb);
                     cb_indx = CB_FNMATCHFUNCTION;
+                    cb_func = curl_fnmatchfunction_cb;
                     break;
                 case CURLOPT_TRAILERFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_TRAILERFUNCTION, curl_trailerfunction_cb, cb);
                     cb_indx = CB_TRAILERFUNCTION;
+                    cb_func = curl_trailerfunction_cb;
                     break;
                 case CURLOPT_XFERINFOFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_XFERINFOFUNCTION, curl_xferinfofunction_cb, cb);
                     cb_indx = CB_XFERINFOFUNCTION;
+                    cb_func = curl_xferinfofunction_cb;
                     break;
                 case CURLOPT_READFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_READFUNCTION, curl_readfunction_cb, cb);
                     cb_indx = CB_READFUNCTION;
+                    cb_func = curl_readfunction_cb;
                     break;
                 case CURLOPT_WRITEFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_WRITEFUNCTION, curl_writefunction_cb, cb);
                     cb_indx = CB_WRITEFUNCTION;
+                    cb_func = curl_writefunction_cb;
                     break;
                 case CURLOPT_SOCKOPTFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_SOCKOPTFUNCTION, curl_sockoptfunction_cb, cb);
                     cb_indx = CB_SOCKOPTFUNCTION;
+                    cb_func = curl_sockoptfunction_cb;
                     break;
                 case CURLOPT_SSL_CTX_FUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_SSL_CTX_FUNCTION, curl_ssl_ctx_function_cb, cb);
                     cb_indx = CB_SSL_CTX_FUNCTION;
+                    cb_func = curl_ssl_ctx_function_cb;
                     break;
                 case CURLOPT_SSH_KEYFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_SSH_KEYFUNCTION, curl_ssh_keyfunction_cb, cb);
                     cb_indx = CB_SSH_KEYFUNCTION;
+                    cb_func = curl_ssh_keyfunction_cb;
                     break;
                 case CURLOPT_RESOLVER_START_FUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_RESOLVER_START_FUNCTION, curl_resolver_start_function_cb, cb);
                     cb_indx = CB_RESOLVER_START_FUNCTION;
+                    cb_func = curl_resolver_start_function_cb;
                     break;
                 case CURLOPT_SEEKFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_SEEKFUNCTION, curl_seekfunction_cb, cb);
                     cb_indx = CB_SEEKFUNCTION;
+                    cb_func = curl_seekfunction_cb;
                     break;
                 case CURLOPT_PREREQFUNCTION:
-                    r = cb_setup((CURL *)THIS(e_http), CURLOPT_PREREQFUNCTION, curl_prereqfunction_cb, cb);
+                    cb_indx = CB_PREREQFUNCTION;
+                    cb_func = curl_prereqfunction_cb;
                     int t = cd_setup((CURL *)THIS(e_http), CURLOPT_PREREQDATA, CB_PREREQFUNCTION, cb, &p);
                     if(t == CURLE_OK)
-                        SvREFCNT_inc(cb);
+                        if(cb)
+                            SvREFCNT_inc(cb);
                     if(p)
                         SvREFCNT_dec(p);
-                    cb_indx = CB_PREREQFUNCTION;
                     break;
                 default:
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
             }
-            //printf("r: %d, %d\n", r, cb_indx);
-            if(r == CURLE_OK){
-                // first increase refcount, then decrease the old one, else we
-                // might GC the object while we are just reusing the same var
-                SvREFCNT_inc(cb);
-                if(cb_indx != -1){
-                    void *p = NULL;
-                    int t = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
-                    //printf("t: %p, %d, %d %d: %p\n", THIS(e_http), t, r, cb_indx, p);
-                    if(t == CURLE_OK && p){
-                        //printf("p: %p, %p, %d\n", p, (void *)((p_curl_easy *)p)->cb[cb_indx], cb_indx);
-                        SV *ptr = ((p_curl_easy *)p)->cb[cb_indx];
-                        if(ptr)
-                            SvREFCNT_dec(ptr);
-                        ((p_curl_easy *)p)->cb[cb_indx] = cb;
-                    }
-                } else {
-                    croak("Invalid callback index: INTERNAL ERROR");
-                }
-            }
+            SV *cb_orig = NULL;
+            r = cb_setup((CURL *)THIS(e_http), c_opt, cb_indx, cb_func, cb, &cb_orig);
+            // first increase refcount, then decrease the old one, else we
+            // might GC the object while we are just reusing the same var
+            //printf("r: %d, %d, %p, %p\n", r, cb_indx, cb, cb_orig);
+            if(r == CURLE_OK)
+                if(cb)
+                    SvREFCNT_inc(cb);
+            if(cb_orig)
+                SvREFCNT_dec(cb_orig);
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
             long _vo = (curl_off_t)SvIV(value);
         //printf("p3: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
