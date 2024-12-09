@@ -613,6 +613,7 @@ BOOT:
         newCONSTSUB(stash, "CURL_PUSH_OK"               , newSViv(CURL_PUSH_OK));
         newCONSTSUB(stash, "CURL_PUSH_DENY"             , newSViv(CURL_PUSH_DENY));
         newCONSTSUB(stash, "CURL_PREREQFUNC_OK"         , newSViv(CURL_PREREQFUNC_OK));
+        newCONSTSUB(stash, "CURL_PREREQFUNC_ABORT"      , newSViv(CURL_PREREQFUNC_ABORT));
         newCONSTSUB(stash, "CURL_SSLVERSION_DEFAULT"    , newSViv(CURL_SSLVERSION_DEFAULT));
         newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1"      , newSViv(CURL_SSLVERSION_TLSv1));
         newCONSTSUB(stash, "CURL_SSLVERSION_SSLv2"      , newSViv(CURL_SSLVERSION_SSLv2));

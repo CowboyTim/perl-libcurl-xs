@@ -1,4 +1,4 @@
-use Test::More tests => 14;
+use Test::More tests => 17;
 use strict; use warnings;
 
 use FindBin;
@@ -19,7 +19,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = \(""));
     is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT string ref');
     http::curl_easy_cleanup($e);
@@ -28,7 +28,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = {});
     is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT hash ref');
     http::curl_easy_cleanup($e);
@@ -37,7 +37,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = []);
     is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT hash ref');
     http::curl_easy_cleanup($e);
@@ -46,7 +46,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = sub{});
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code ref');
     http::curl_easy_cleanup($e);
@@ -61,7 +61,7 @@ use_ok('utils::curl', qw());
     };
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), \&code_sub);
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     $k |= http::curl_easy_perform($e);
@@ -72,7 +72,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = sub {
         my ($p_ip, $l_ip, $p_port, $l_port) = @_;
         return http::CURL_PREREQFUNC_OK();
@@ -86,7 +86,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
         my ($p_ip, $l_ip, $p_port, $l_port) = @_;
         return http::CURL_PREREQFUNC_OK();
@@ -100,7 +100,7 @@ use_ok('utils::curl', qw());
 {
     my $k;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
         return http::CURL_PREREQFUNC_OK();
     });
@@ -116,21 +116,40 @@ use_ok('utils::curl', qw());
     my $k;
     my $k_cnt = 0;
     my $e = http::curl_easy_init();
-    http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), my $abc = sub {
         my ($p_ip, $l_ip, $p_port, $l_port) = @_;
         die;
         return http::CURL_PREREQFUNC_OK();
     });
     $abc = undef;
+    my $info;
     $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
         my ($p_ip, $l_ip, $p_port, $l_port) = @_;
+        $info = "$l_ip/$l_port->$p_ip/$p_port OK";
         $k_cnt+=1;
         return http::CURL_PREREQFUNC_OK();
     });
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     $k |= http::curl_easy_perform($e);
     is($k_cnt, 1, 'callback function called: ok successes:'.$k_cnt);
+    isnt($info, '', 'callback function called: ok info:'.$info);
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code ref, no var, no closure: '.http::curl_easy_strerror($k));
+    http::curl_easy_cleanup($e);
+}
+
+{
+    my $k;
+    my $e = http::curl_easy_init();
+    my $info;
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_PREREQFUNCTION(), sub {
+        my ($p_ip, $l_ip, $p_port, $l_port) = @_;
+        $info = "$l_ip/$l_port->$p_ip/$p_port ABORT";
+        return http::CURL_PREREQFUNC_ABORT();
+    });
+    $k |= http::curl_easy_perform($e);
+    isnt($info, '', 'callback function called: ok info:'.$info);
+    is($k, http::CURLE_ABORTED_BY_CALLBACK(), 'http::curl_easy_setopt() return CURLE_ABORTED_BY_CALLBACK code ref, no var, no closure: '.http::curl_easy_strerror($k));
     http::curl_easy_cleanup($e);
 }
