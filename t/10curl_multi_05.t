@@ -24,7 +24,7 @@ my $r = http::curl_multi_init();
 $k |= http::curl_multi_add_handle($r, $s);
 $k |= http::curl_multi_add_handle($r, $t);
 my $handles = http::curl_multi_get_handles($r);
-is_deeply($handles, [$$s, $$t], 'http::curl_multi_get_handles(): return value ok: handles added');
+is_deeply($handles, [$s, $t], 'http::curl_multi_get_handles(): return value ok: handles added');
 $k |= http::curl_multi_cleanup($r);
 is($k, http::CURLE_OK(), 'no errors');
 is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');

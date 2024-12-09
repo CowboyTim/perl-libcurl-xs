@@ -45,7 +45,7 @@ is($k1, http::CURLM_OK(), 'http::curl_multi_add_handle(): return value ok: handl
 my $t1 = http::curl_multi_add_handle($r, $t);
 is($t1, http::CURLM_OK(), 'http::curl_multi_add_handle(): return value ok: handle added');
 my $handles = http::curl_multi_get_handles($r);
-is_deeply($handles, [$$s, $$t], 'http::curl_multi_get_handles(): return value ok: handles added');
+is_deeply($handles, [$s, $t], 'http::curl_multi_get_handles(): return value ok: handles added');
 my $ri5 = http::curl_multi_info_read($r, my $msgs_in_queue = 5);
 is($ri5, undef, 'http::curl_multi_info_read(): return value ok');
 is($msgs_in_queue, 0, 'http::curl_multi_info_read(): return value ok: msgs_in_queue=0');
