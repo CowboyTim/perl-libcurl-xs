@@ -81,7 +81,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(((p_curl_easy *)p)->curle);
+    XPUSHs(newRV(((p_curl_easy *)p)->curle));
     XPUSHs(sv_2mortal(newSViv((IV)type)));
     XPUSHs(sv_2mortal(newSVpv(data, size)));
     PUTBACK;
@@ -231,7 +231,7 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(((p_curl_easy *)p)->curle);
+    XPUSHs(newRV(((p_curl_easy *)p)->curle));
     XPUSHs(sv_2mortal(newSViv(cmd)));
     PUTBACK;
     call_sv(cb, G_DISCARD);
@@ -279,7 +279,7 @@ static int curl_prereqfunction_cb(void *userp, CURL *handle){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(((p_curl_easy *)p)->curle);
+    XPUSHs(newRV(((p_curl_easy *)p)->curle));
     PUTBACK;
     int rt = call_sv(cb, G_SCALAR);
     SPAGAIN;
@@ -1439,7 +1439,7 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
             if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
                 continue;
             SvREFCNT_inc(((p_curl_easy *)p)->curle);
-            av_push(av, ((p_curl_easy *)p)->curle);
+            av_push(av, newRV(((p_curl_easy *)p)->curle));
         }
         curl_free(e);
         XPUSHs(newRV_noinc((SV *)av));
