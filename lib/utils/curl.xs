@@ -1269,11 +1269,15 @@ void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_UNDEF;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
+        void *p = NULL;
+        int rp = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        if(rp == CURLE_OK && p && ((p_curl_easy *)p)->curle == SvRV(e_http)){
+            if(SvREFCNT(SvRV(e_http)) > 1)
+                SvREFCNT_dec(SvRV(e_http));
+        }
         int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(SvREFCNT(SvRV(e_http)) > 1)
-            SvREFCNT_dec(SvRV(e_http));
         XSRETURN_IV(r);
 
 void L_curl_multi_strerror(int code)
@@ -1465,7 +1469,7 @@ void M_DESTROY(SV *m_http=NULL)
                 void *p = NULL;
                 int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
                 if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
-                    SvREFCNT_dec(SvRV(((p_curl_easy *)p)->curle));
+                    SvREFCNT_dec(((p_curl_easy *)p)->curle);
                 }
             }
         }
