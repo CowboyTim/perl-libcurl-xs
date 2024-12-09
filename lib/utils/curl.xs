@@ -1271,13 +1271,13 @@ void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_UNDEF;
         void *p = NULL;
         int rp = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
+        if(r != CURLM_OK)
+            XSRETURN_IV(r);
         if(rp == CURLE_OK && p && ((p_curl_easy *)p)->curle == SvRV(e_http)){
             if(SvREFCNT(SvRV(e_http)) > 1)
                 SvREFCNT_dec(SvRV(e_http));
         }
-        int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
-        if(r != CURLM_OK)
-            XSRETURN_IV(r);
         XSRETURN_IV(r);
 
 void L_curl_multi_strerror(int code)
