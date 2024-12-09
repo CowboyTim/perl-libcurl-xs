@@ -237,11 +237,11 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
     void *p = NULL;
     int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
     if(ri != CURLE_OK || !p)
-        return 0;
+        return CURLIOE_OK; // consider OK?
     p_curl_easy *pe = (p_curl_easy *)p;
     SV *cb = (SV *)(pe->cb[CB_IOCTLFUNCTION]);
     if(cb && SvTYPE(cb) != SVt_PVCV)
-        return 0;
+        return CURLIOE_OK; // consider OK?
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -286,7 +286,7 @@ static int curl_fnmatchfunction_cb(void *userp, const char *pattern, const char 
     return res;
 }
 
-static int curl_prereqfunction_cb(void *userp, CURL *handle){
+static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn_local_ip, int conn_primary_port, int conn_local_port){
     dTHX;
     dSP;
     if(userp == NULL)
@@ -294,19 +294,18 @@ static int curl_prereqfunction_cb(void *userp, CURL *handle){
     SV *cb = (SV*)userp;
     if(SvTYPE(cb) != SVt_PVCV)
         return 0;
-    void *p = NULL;
-    int r = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
-        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(((p_curl_easy *)p)->curle));
+    XPUSHs(sv_2mortal(newSVpv(conn_primary_ip, 0)));
+    XPUSHs(sv_2mortal(newSVpv(conn_local_ip, 0)));
+    XPUSHs(sv_2mortal(newSViv(conn_primary_port)));
+    XPUSHs(sv_2mortal(newSViv(conn_local_port)));
     PUTBACK;
-    int rt = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
     int res = 0;
-    if(rt == 1)
+    if(r == 1)
         res = POPi;
     FREETMPS;
     LEAVE;
@@ -610,6 +609,24 @@ BOOT:
         newCONSTSUB(stash, "CURL_WAIT_POLLOUT"          , newSViv(CURL_WAIT_POLLOUT));
         newCONSTSUB(stash, "CURL_PUSH_OK"               , newSViv(CURL_PUSH_OK));
         newCONSTSUB(stash, "CURL_PUSH_DENY"             , newSViv(CURL_PUSH_DENY));
+        newCONSTSUB(stash, "CURL_PREREQFUNC_OK"         , newSViv(CURL_PREREQFUNC_OK));
+        newCONSTSUB(stash, "CURL_SSLVERSION_DEFAULT"    , newSViv(CURL_SSLVERSION_DEFAULT));
+        newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1"      , newSViv(CURL_SSLVERSION_TLSv1));
+        newCONSTSUB(stash, "CURL_SSLVERSION_SSLv2"      , newSViv(CURL_SSLVERSION_SSLv2));
+        newCONSTSUB(stash, "CURL_SSLVERSION_SSLv3"      , newSViv(CURL_SSLVERSION_SSLv3));
+        newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1_0"    , newSViv(CURL_SSLVERSION_TLSv1_0));
+        newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1_1"    , newSViv(CURL_SSLVERSION_TLSv1_1));
+        newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1_2"    , newSViv(CURL_SSLVERSION_TLSv1_2));
+        newCONSTSUB(stash, "CURL_SSLVERSION_TLSv1_3"    , newSViv(CURL_SSLVERSION_TLSv1_3));
+        newCONSTSUB(stash, "CURL_SSLVERSION_MAX_DEFAULT", newSViv(CURL_SSLVERSION_MAX_DEFAULT));
+        newCONSTSUB(stash, "CURL_SSLVERSION_MAX_TLSv1_0", newSViv(CURL_SSLVERSION_MAX_TLSv1_0));
+        newCONSTSUB(stash, "CURL_SSLVERSION_MAX_TLSv1_1", newSViv(CURL_SSLVERSION_MAX_TLSv1_1));
+        newCONSTSUB(stash, "CURL_SSLVERSION_MAX_TLSv1_2", newSViv(CURL_SSLVERSION_MAX_TLSv1_2));
+        newCONSTSUB(stash, "CURL_SSLVERSION_MAX_TLSv1_3", newSViv(CURL_SSLVERSION_MAX_TLSv1_3));
+        newCONSTSUB(stash, "CURL_TIMECOND_NONE"         , newSViv(CURL_TIMECOND_NONE));
+        newCONSTSUB(stash, "CURL_TIMECOND_IFMODSINCE"   , newSViv(CURL_TIMECOND_IFMODSINCE));
+        newCONSTSUB(stash, "CURL_TIMECOND_IFUNMODSINCE" , newSViv(CURL_TIMECOND_IFUNMODSINCE));
+        newCONSTSUB(stash, "CURL_TIMECOND_LASTMOD"      , newSViv(CURL_TIMECOND_LASTMOD));
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         newCONSTSUB(stash, "CURL_PUSH_ERROROUT"         , newSViv(CURL_PUSH_ERROROUT));
 #else
@@ -818,13 +835,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     if(p)
                         SvREFCNT_dec(p);
                     break;
-                case CURLOPT_PREREQDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_PREREQFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_SSH_KEYDATA:
                     r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SSH_KEYFUNCTION, value, &p);
                     if(r == CURLE_OK)
@@ -840,102 +850,20 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                         SvREFCNT_dec(p);
                     break;
                 case CURLOPT_CLOSESOCKETDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_CLOSESOCKETFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_OPENSOCKETDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_OPENSOCKETFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_READDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_READFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_WRITEDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_WRITEFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_FNMATCH_DATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_FNMATCHFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_HEADERDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_HEADERFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_HSTSREADDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_HSTSREADFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_HSTSWRITEDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_HSTSWRITEFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_INTERLEAVEDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_INTERLEAVEFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_RESOLVER_START_DATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_RESOLVER_START_FUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_SOCKOPTDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SOCKOPTFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_TRAILERDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_TRAILERFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_XFERINFODATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_XFERINFOFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
-                    break;
                 case CURLOPT_SEEKDATA:
-                    r = cd_setup((CURL *)THIS(e_http), c_opt, CB_SEEKFUNCTION, value, &p);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(value);
-                    if(p)
-                        SvREFCNT_dec(p);
+                case CURLOPT_PREREQDATA:
                     break;
                 default:
                     if(!SvPOK(value))
@@ -948,6 +876,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             int cb_indx = -1;
             // NULL clears the FUNCTION/DATA combination
             SV *cb = NULL;
+            SV *p = NULL;
             if(value && SvROK(value) && SvTYPE(SvRV(value)) == SVt_PVCV)
                 cb = SvRV(value);
             if(value && SvROK(value) && SvTYPE(SvRV(value)) != SVt_PVCV)
@@ -1025,6 +954,11 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     break;
                 case CURLOPT_PREREQFUNCTION:
                     r = cb_setup((CURL *)THIS(e_http), CURLOPT_PREREQFUNCTION, curl_prereqfunction_cb, cb);
+                    int t = cd_setup((CURL *)THIS(e_http), CURLOPT_PREREQDATA, CB_PREREQFUNCTION, cb, &p);
+                    if(t == CURLE_OK)
+                        SvREFCNT_inc(cb);
+                    if(p)
+                        SvREFCNT_dec(p);
                     cb_indx = CB_PREREQFUNCTION;
                     break;
                 default:
