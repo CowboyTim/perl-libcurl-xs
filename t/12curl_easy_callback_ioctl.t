@@ -1,10 +1,13 @@
-use Test::More tests => 19;
+use Test::More tests => 20;
 use strict; use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
 
 use_ok('utils::curl', qw());
+
+my $warn = 0;
+$SIG{__WARN__} = sub {$warn++};
 
 {
     my $k;
@@ -115,6 +118,10 @@ use_ok('utils::curl', qw());
     $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLFUNCTION(), undef);
     $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLFUNCTION(), sub {});
     $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLFUNCTION());
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLDATA(), my $dt = []);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLDATA(), undef);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLDATA(), my $dh = []);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_IOCTLDATA());
     $k |= http::curl_easy_perform($e);
     is($e_cnt, 0, 'callback function called: no errors');
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code ref, no var, no closure');
@@ -145,3 +152,5 @@ use_ok('utils::curl', qw());
     is($e_url, '', 'http::curl_easy_getinfo() return URL still empty, not called, difficult to test');
     http::curl_easy_cleanup($e);
 }
+
+is($warn, 0, 'no warnings');
