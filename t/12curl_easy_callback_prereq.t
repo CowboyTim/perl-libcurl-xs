@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict; use warnings;
 
 use FindBin;
@@ -105,6 +105,8 @@ use_ok('utils::curl', qw());
         return http::CURL_PREREQFUNC_OK();
     });
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
+    my $t = http::curl_easy_setopt($e, http::CURLOPT_PREREQDATA(), 'abc');
+    is($t, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT: '.http::curl_easy_strerror($t));
     $k |= http::curl_easy_perform($e);
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code ref, no var, no closure: '.http::curl_easy_strerror($k));
     http::curl_easy_cleanup($e);
