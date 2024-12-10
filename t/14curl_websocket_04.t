@@ -28,9 +28,10 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_HTTPHEADER(), [
 my $nr_of_calls = 0;
 my $nr_err = 0;
 my $ws_frame;
+$k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEDATA(), my $def = "");
 $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
     my ($c_e, $buf, $userp) = @_;
-    $nr_err++ unless "$c_e" eq "$r" and !defined $userp;
+    $nr_err++ unless "$c_e" eq "$r" and defined $userp;
     $nr_of_calls++;
     my $ws_f = http::curl_ws_meta($c_e);
     $ws_frame ||= $ws_f if $ws_f;
@@ -45,15 +46,18 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
 $k |= http::curl_easy_setopt($r, http::CURLOPT_UPLOAD(), 1);
 my $nr_read_err = 0;
 my $nr_reads = 0;
+$k |= http::curl_easy_setopt($r, http::CURLOPT_READDATA(), my $abc = "");
 $k |= http::curl_easy_setopt($r, http::CURLOPT_READFUNCTION(), sub {
     my ($c_e, $sz, $userp) = @_;
-    $nr_read_err++ unless "$c_e" eq "$r" and !defined $userp;
+    $nr_read_err++ unless "$c_e" eq "$r" and defined $userp;
     $nr_reads++;
     $k |= http::curl_easy_setopt($r, http::CURLOPT_UPLOAD(), 0);
     die "curl_easy_setopt 1: ".http::curl_easy_strerror($k) if $k != http::CURLE_OK();
     print "CLEAR\n";
-    $k |= http::curl_easy_setopt($r, http::CURLOPT_READFUNCTION(), undef);
+    $k |= http::curl_easy_setopt($r, http::CURLOPT_READFUNCTION());
     die "curl_easy_setopt 2: ".http::curl_easy_strerror($k) if $k != http::CURLE_OK();
+    $k |= http::curl_easy_setopt($r, http::CURLOPT_READDATA());
+    die "curl_easy_setopt 3: ".http::curl_easy_strerror($k) if $k != http::CURLE_OK();
     return "Hello, world! ".time()."\n";
 });
 $k |= http::curl_easy_setopt($r, http::CURLOPT_NOPROGRESS(), 1);

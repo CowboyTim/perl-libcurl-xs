@@ -1,10 +1,13 @@
-use Test::More tests => 8;
+use Test::More tests => 14;
 use strict; use warnings;
 
 use FindBin;
 use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
 
 use_ok('utils::curl', qw());
+
+my $warn = 0;
+$SIG{__WARN__} = sub {$warn++};
 
 my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
@@ -33,14 +36,20 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPALIVE(), 1);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPIDLE(), 120);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPINTVL(), 60);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPIDLE(), 120);
+$k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEDATA(), my $abc = "");
+my $nr_of_calls = 0;
+my $nr_err = 0;
+my $ws_frame;
 $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
-    my ($buf) = @_;
-    my $ws_frame = http::curl_ws_meta($r);
-    if($ws_frame){
-        is_deeply($ws_frame, {flags => 1, bytesleft => 0, age => 0, offset => 0}, 'ws_frame OK');
-    }
+    my ($c_e, $buf, $userp) = @_;
+    $nr_err++ unless "$c_e" eq "$r" and defined $userp;
+    $nr_of_calls++;
+    my $ws_f = http::curl_ws_meta($r);
+    $ws_frame ||= $ws_f if $ws_f;
     return length($buf);
 });
+is($nr_err, 0, 'writefunction called with correct arguments');
+is($nr_of_calls, 0, 'writefunction not called yet');
 is($k, http::CURLE_OK(), 'curl_easy_setopt');
 $k |= http::curl_easy_perform($r);
 is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
@@ -64,5 +73,8 @@ is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
     }
     like($recv_data, qr/^Hello, world! \d+/, 'recv_data: '.do{my $s = ($recv_data//"undef"); chomp $s; $s});
 }
-
+is_deeply($ws_frame, undef, 'ws_frame OK: not set as writefunction not called');
+is($nr_err, 0, 'writefunction called with correct arguments');
+is($nr_of_calls, 0, 'writefunction not called yet');
+is($warn, 0, 'no warnings');
 http::curl_easy_cleanup($r);
