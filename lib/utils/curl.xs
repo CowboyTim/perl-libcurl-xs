@@ -636,18 +636,25 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
     return res;
 }
 
-static int curl_ssl_ctx_function_cb(CURL *curl, void *sslctx, void *userp){
+static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     dTHX;
     dSP;
-    if(userp == NULL)
+    void *p = NULL;
+    int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
+    if(ri != CURLE_OK || !p)
         return 0;
-    SV *cb = (SV*)userp;
-    if(SvTYPE(cb) != SVt_PVCV)
+    p_curl_easy *pe = (p_curl_easy *)p;
+    SV *cb = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cb);
+    if(cb && SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(newSViv(PTR2IV(sslctx))));
+    if(userp && SvOK((SV *)userp))
+        XPUSHs((SV *)userp);
+    else
+        XPUSHs(&PL_sv_undef);
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
@@ -659,15 +666,16 @@ static int curl_ssl_ctx_function_cb(CURL *curl, void *sslctx, void *userp){
     return res;
 }
 
-static int curl_ssh_keyfunction_cb(CURL *curl, const struct curl_khkey *knownkey, const struct curl_khkey *foundkey, int khmatch, void *userp){
+static int curl_ssh_keyfunction_cb(CURL *handle, const struct curl_khkey *knownkey, const struct curl_khkey *foundkey, int khmatch, void *userp){
     dTHX;
     dSP;
-    if(userp == NULL)
+    void *p = NULL;
+    int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
+    if(ri != CURLE_OK || !p)
         return 0;
-    SV *cb = (SV*)userp;
-    if(SvTYPE(cb) != SVt_PVCV)
-        return 0;
-    if(knownkey == NULL || foundkey == NULL)
+    p_curl_easy *pe = (p_curl_easy *)p;
+    SV *cb = (SV *)(pe->cbs[CB_SSH_KEYFUNCTION].cb);
+    if(cb && SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
@@ -683,6 +691,10 @@ static int curl_ssh_keyfunction_cb(CURL *curl, const struct curl_khkey *knownkey
         else
             XPUSHs(sv_2mortal(newSVpv(foundkey->key, 0)));
     XPUSHs(sv_2mortal(newSViv((int)(IV)khmatch)));
+    if(userp && SvOK((SV *)userp))
+        XPUSHs((SV *)userp);
+    else
+        XPUSHs(&PL_sv_undef);
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
@@ -1012,18 +1024,34 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_DEBUGDATA:
                     cb_indx = CB_DEBUGFUNCTION;
                     cb_handle = 1;
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
+                    if(r == CURLE_OK)
+                        SvREFCNT_inc(dt);
+                    f = 1;
                     break;
                 case CURLOPT_IOCTLDATA:
                     cb_indx = CB_IOCTLFUNCTION;
                     cb_handle = 1;
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
+                    if(r == CURLE_OK)
+                        SvREFCNT_inc(dt);
+                    f = 1;
                     break;
                 case CURLOPT_SSH_KEYDATA:
                     cb_indx = CB_SSH_KEYFUNCTION;
                     cb_handle = 1;
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
+                    if(r == CURLE_OK)
+                        SvREFCNT_inc(dt);
+                    f = 1;
                     break;
                 case CURLOPT_SSL_CTX_DATA:
                     cb_indx = CB_SSL_CTX_FUNCTION;
                     cb_handle = 1;
+                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
+                    if(r == CURLE_OK)
+                        SvREFCNT_inc(dt);
+                    f = 1;
                     break;
                 case CURLOPT_READDATA:
                     cb_indx = CB_READFUNCTION;
