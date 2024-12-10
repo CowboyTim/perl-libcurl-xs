@@ -1,4 +1,4 @@
-use Test::More tests => 14;
+use Test::More tests => 17;
 use strict; use warnings;
 
 use FindBin;
@@ -36,7 +36,9 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPALIVE(), 1);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPIDLE(), 120);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPINTVL(), 60);
 $k |= http::curl_easy_setopt($r, http::CURLOPT_TCP_KEEPIDLE(), 120);
+is($k, http::CURLE_OK(), 'curl_easy_setopt');
 $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEDATA(), my $abc = "");
+is($k, http::CURLE_OK(), 'curl_easy_setopt: '.http::curl_easy_strerror($k));
 my $nr_of_calls = 0;
 my $nr_err = 0;
 my $ws_frame;
@@ -48,6 +50,7 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
     $ws_frame ||= $ws_f if $ws_f;
     return length($buf);
 });
+is($k, http::CURLE_OK(), 'curl_easy_setopt: '.http::curl_easy_strerror($k));
 is($nr_err, 0, 'writefunction called with correct arguments');
 is($nr_of_calls, 0, 'writefunction not called yet');
 is($k, http::CURLE_OK(), 'curl_easy_setopt');
