@@ -1,4 +1,4 @@
-use Test::More tests => 10;
+use Test::More tests => 19;
 use strict; use warnings;
 
 use FindBin;
@@ -31,7 +31,7 @@ if($ssl_ctx_ok){
 }
 
 {
-    my $k_cnt = 0;
+    $::k_cnt = 0;
     sub code_sub {
         my ($sslctx, $userp) = @_;
         if($ssl_ctx_ok){
@@ -72,7 +72,7 @@ if($ssl_ctx_ok){
         } else {
             push @{$userp //= []}, "Net::SSLeay not available, no SSL_CTX info callback";
         }
-        $k_cnt++;
+        $::k_cnt++;
         return http::CURLE_OK();
     };
     my $k;
@@ -82,18 +82,32 @@ if($ssl_ctx_ok){
     $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_DATA(), my $rt = []);
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     $k |= http::curl_easy_perform($e);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code sub, no var, no closure');
-    is($k_cnt, 0, 'callback function called: ok successes:'.$k_cnt);
-    is_deeply($rt, [], 'callback function called: ok data:'.join('',@$rt));
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+    is($::k_cnt, 0, 'callback function called: ok successes:'.$::k_cnt);
+    is_deeply($rt, [], 'callback function called: ok data: (no https) RT:'.join('',@$rt));
     $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'https://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_DATA(), my $up = []);
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
+    my $d = http::curl_easy_duphandle($e);
     $k |= http::curl_easy_perform($e);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code sub, no var, no closure');
     http::curl_easy_cleanup($e);
-    is($k_cnt, 1, 'callback function called: ok successes:'.$k_cnt);
-    is_deeply($rt, [], 'callback function called: ok data:'.join('',@$rt));
-    isnt(scalar(@$up), 0, 'callback function called: ok data');
+    undef $e;
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, after https');
+    is($::k_cnt, 1, 'callback function called: ok successes:'.$::k_cnt);
+    is_deeply($rt, [], 'callback function called: ok data: (no https) RT:'.join('',@$rt));
+    isnt(scalar(@$up), 0, 'callback function called: ok data: (after dup) UP:'.scalar(@$up));
+    $k |= http::curl_easy_setopt($d, http::CURLOPT_SSL_CTX_DATA(), my $ru = []);
+    is_deeply($ru, [], 'callback function called: ok data: (from dup) RU:'.join('',@$ru));
+    is(scalar(@$ru), 0, 'callback function called: ok data: (from dup) RU:'.scalar(@$ru));
+    isnt(scalar(@$up), 0, 'callback function called: ok data: (after dup) UP:'.scalar(@$up));
+    $k |= http::curl_easy_perform($d);
+    isnt(scalar(@$ru), 0, 'callback function called: ok data: (from dup, after perform) RU:'.scalar(@$ru));
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, on dup, after https');
+    http::curl_easy_cleanup($d);
+    is($::k_cnt, 2, 'callback function called: ok successes, 2x:'.$::k_cnt);
+    is_deeply($rt, [], 'callback function called: ok data: (no https) RT:'.join('',@$rt));
+    isnt(scalar(@$up), 0, 'callback function called: ok data: (after dup) UP:'.scalar(@$up));
+    isnt(scalar(@$ru), 0, 'callback function called: ok data: (from dup, after perform) RU:'.scalar(@$ru));
 }
 
 is($warn, 0, 'no warnings: '.join(',',@warns));
