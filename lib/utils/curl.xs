@@ -192,8 +192,8 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t item){
     if(!userp)
         return 0;
     p_curl_easy *pe = (p_curl_easy *)userp;
-    SV *cd = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cd);
-    SV *cb = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cb);
+    SV *cd = (SV *)(pe->cbs[CB_CLOSESOCKETFUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_CLOSESOCKETFUNCTION].cb);
     if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -205,22 +205,26 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t item){
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    int r = call_sv(cb, G_SCALAR);
+    SPAGAIN;
+    int res = 0;
+    if(r == 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
-    return 0;
+    return res;
 }
 
 static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct curl_sockaddr *address){
     dTHX;
     dSP;
     if(!userp)
-        return CURL_SOCKET_BAD;
+        return 0;
     p_curl_easy *pe = (p_curl_easy *)userp;
-    SV *cd = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cd);
-    SV *cb = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cb);
+    SV *cd = (SV *)(pe->cbs[CB_OPENSOCKETFUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_OPENSOCKETFUNCTION].cb);
     if(!cb || SvTYPE(cb) != SVt_PVCV)
-        return CURL_SOCKET_BAD;
+        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -236,14 +240,12 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
-    int sock = 0;
+    int res = 0;
     if(r == 1)
-        sock = POPi;
+        res = POPi;
     FREETMPS;
     LEAVE;
-    if(r == 1)
-        return sock;
-    return CURL_SOCKET_BAD;
+    return res;
 }
 
 static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *userp){
@@ -252,8 +254,8 @@ static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *u
     if(!userp)
         return 0;
     p_curl_easy *pe = (p_curl_easy *)userp;
-    SV *cd = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cd);
-    SV *cb = (SV *)(pe->cbs[CB_HSTSREADFUNCTION].cb);
+    SV *cd = (SV *)(pe->cbs[CB_HEADERFUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_HEADERFUNCTION].cb);
     if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
@@ -995,8 +997,12 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
 
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT
             || c_opt == CURLOPTTYPE_VALUES){
-            long _vl = (long)SvIV(value);
-            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
+            if(value && SvOK(value)){
+                long _vl = (long)SvIV(value);
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
+            } else {
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, NULL);
+            }
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             int cb_indx = -1, cb_handle = 1, f = 0;
             SV *p = NULL;
@@ -1101,10 +1107,14 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     cb_handle = 0;
                     break;
                 default:
-                    if(!SvPOK(dt))
-                        XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
-                    char *_vc = (char *)SvPV_nolen(dt);
-                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
+                    if(dt && SvOK(dt)){
+                        if(!SvPOK(dt))
+                            XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
+                        char *_vc = (char *)SvPV_nolen(dt);
+                        r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vc);
+                    } else {
+                        r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, NULL);
+                    }
                     f = 1;
                     break;
             }
@@ -1270,9 +1280,12 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             if(p)
                 SvREFCNT_dec(p);
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
-            long _vo = (curl_off_t)SvIV(value);
-        //printf("p3: %lld, %p, f: %d & %d\n", (long long)SvIV(SvRV(e_http)), THIS(e_http), c_opt, CURLOPT_URL);
-            r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vo);
+            if(value && SvOK(value)){
+                curl_off_t _vo = (curl_off_t)SvIV(value);
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vo);
+            } else {
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, NULL);
+            }
         } else {
             XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
         }

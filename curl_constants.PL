@@ -24,6 +24,9 @@ for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h curl/websockets
 }
 push @c, $str =~ m/^\s*(CURLINFO_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLE_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/^\s*(CURLSOCKTYPE_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/\s*#define\s*(CURL_SOCKOPT_(?:[A-Z_0-9]+))\s*/gms;
+push @c, $str =~ m/\s*#define\s*(CURL_SOCKET_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/\s*#define\s*(CURLWS_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLUE_(?:[A-Z_0-9]+))\s*/gms;
 push @c, $str =~ m/^\s*(CURLUPART_(?:[A-Z_0-9]+))\s*/gms;
