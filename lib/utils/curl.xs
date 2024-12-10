@@ -346,16 +346,22 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
 static int curl_fnmatchfunction_cb(void *userp, const char *pattern, const char *string){
     dTHX;
     dSP;
-    if(userp == NULL)
+    if(!userp)
         return 0;
-    SV *cb = (SV*)userp;
-    if(SvTYPE(cb) != SVt_PVCV)
+    p_curl_easy *pe = (p_curl_easy *)userp;
+    SV *cd = (SV *)(pe->cbs[CB_FNMATCH_FUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_FNMATCH_FUNCTION].cb);
+    if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
     XPUSHs(sv_2mortal(newSVpv(pattern, 0)));
     XPUSHs(sv_2mortal(newSVpv(string, 0)));
+    if(cd && SvOK(cd))
+        XPUSHs(cd);
+    else
+        XPUSHs(&PL_sv_undef);
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
@@ -370,10 +376,12 @@ static int curl_fnmatchfunction_cb(void *userp, const char *pattern, const char 
 static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn_local_ip, int conn_primary_port, int conn_local_port){
     dTHX;
     dSP;
-    if(userp == NULL)
+    if(!userp)
         return 0;
-    SV *cb = (SV*)userp;
-    if(SvTYPE(cb) != SVt_PVCV)
+    p_curl_easy *pe = (p_curl_easy *)userp;
+    SV *cd = (SV *)(pe->cbs[CB_PREREQFUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_PREREQFUNCTION].cb);
+    if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
@@ -382,6 +390,10 @@ static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn
     XPUSHs(sv_2mortal(newSVpv(conn_local_ip, 0)));
     XPUSHs(sv_2mortal(newSViv(conn_primary_port)));
     XPUSHs(sv_2mortal(newSViv(conn_local_port)));
+    if(cd && SvOK(cd))
+        XPUSHs(cd);
+    else
+        XPUSHs(&PL_sv_undef);
     PUTBACK;
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
@@ -973,9 +985,24 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     if(p)
                         SvREFCNT_dec(p);
                     break;
+                case CURLOPT_FNMATCH_DATA:
+                    r = cd_setup_pvt((CURL *)THIS(e_http), c_opt, CB_FNMATCH_FUNCTION, dt, &p);
+                    if(r == CURLE_OK)
+                        if(dt)
+                            SvREFCNT_inc(dt);
+                    if(p)
+                        SvREFCNT_dec(p);
+                    break;
+                case CURLOPT_PREREQDATA:
+                    r = cd_setup_pvt((CURL *)THIS(e_http), c_opt, CB_PREREQFUNCTION, dt, &p);
+                    if(r == CURLE_OK)
+                        if(dt)
+                            SvREFCNT_inc(dt);
+                    if(p)
+                        SvREFCNT_dec(p);
+                    break;
                 case CURLOPT_CLOSESOCKETDATA:
                 case CURLOPT_OPENSOCKETDATA:
-                case CURLOPT_FNMATCH_DATA:
                 case CURLOPT_HEADERDATA:
                 case CURLOPT_HSTSREADDATA:
                 case CURLOPT_HSTSWRITEDATA:
@@ -985,7 +1012,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_TRAILERDATA:
                 case CURLOPT_XFERINFODATA:
                 case CURLOPT_SEEKDATA:
-                case CURLOPT_PREREQDATA:
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                     break;
                 default:
@@ -1037,13 +1063,9 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     break;
                 case CURLOPT_FNMATCH_FUNCTION:
                     cb_indx = CB_FNMATCH_FUNCTION;
+                    cd_indx = CURLOPT_FNMATCH_DATA;
                     cb_func = curl_fnmatchfunction_cb;
-                    t = cd_setup((CURL *)THIS(e_http), CURLOPT_FNMATCH_DATA, cb_indx, cb, &p);
-                    if(t == CURLE_OK)
-                        if(cb)
-                            SvREFCNT_inc(cb);
-                    if(p)
-                        SvREFCNT_dec(p);
+                    cb_handle = 0;
                     break;
                 case CURLOPT_TRAILERFUNCTION:
                     cb_indx = CB_TRAILERFUNCTION;
@@ -1087,13 +1109,9 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     break;
                 case CURLOPT_PREREQFUNCTION:
                     cb_indx = CB_PREREQFUNCTION;
+                    cd_indx = CURLOPT_PREREQDATA;
                     cb_func = curl_prereqfunction_cb;
-                    t = cd_setup((CURL *)THIS(e_http), CURLOPT_PREREQDATA, cb_indx, cb, &p);
-                    if(t == CURLE_OK)
-                        if(cb)
-                            SvREFCNT_inc(cb);
-                    if(p)
-                        SvREFCNT_dec(p);
+                    cb_handle = 0;
                     break;
                 default:
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
