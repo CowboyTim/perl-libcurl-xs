@@ -1,0 +1,87 @@
+use Test::More tests => 10;
+use strict; use warnings;
+
+use FindBin;
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../blib/lib";
+
+use_ok('utils::curl', qw());
+
+my @warns;
+my $warn = 0;
+$SIG{__WARN__} = sub {$warn++; push @warns, $_[0]};
+
+eval {
+    require Net::SSLeay;
+    Net::SSLeay::load_error_strings();
+    Net::SSLeay::ERR_clear_error();
+    Net::SSLeay::SSLeay_add_ssl_algorithms();
+    Net::SSLeay::randomize();
+    Net::SSLeay::ENGINE_load_builtin_engines();
+    Net::SSLeay::ENGINE_register_all_complete();
+    Net::SSLeay::ERR_clear_error();
+};
+is($@, '', 'we have Net::SSLeay');
+
+{
+    my $k_cnt = 0;
+    sub code_sub {
+        my ($sslctx, $userp) = @_;
+        Net::SSLeay::CTX_set_info_callback($sslctx, sub {
+            my ($ssl,$where,$ret,$data) = @_;
+            my $info_s;
+            if($where == Net::SSLeay::CB_LOOP()) {
+                $info_s = "HANDSHAKE LOOP: $ret:".Net::SSLeay::state_string_long($ret)." ".sprintf("%x",$ssl);
+            } elsif($where == Net::SSLeay::CB_ALERT()) {
+                my $alert_type = Net::SSLeay::alert_type_string_long($ret);
+                my $alert_desc = Net::SSLeay::alert_desc_string_long($ret);
+                $info_s = "ALERT: ".($alert_type//'undef').", ".($alert_desc//'undef');
+            } elsif($where == Net::SSLeay::CB_CONNECT_EXIT()){
+                $info_s = "CONNECT EXIT: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_CONNECT_LOOP()){
+                $info_s = "CONNECT LOOP: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_ACCEPT_EXIT()){
+                $info_s = "ACCEPT EXIT: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_ACCEPT_LOOP()){
+                $info_s = "ACCEPT LOOP: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_READ()) {
+                $info_s = "READ: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_READ_ALERT()) {
+                $info_s = "READ ALERT: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_WRITE()) {
+                $info_s = "WRITE: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_WRITE_ALERT()) {
+                $info_s = "WRITE ALERT: $ret:".Net::SSLeay::state_string_long($ssl);
+            } elsif($where == Net::SSLeay::CB_HANDSHAKE_START()) {
+                $info_s = "HANDSHAKE START ".sprintf("%x",$ssl);
+            } elsif($where == Net::SSLeay::CB_HANDSHAKE_DONE()) {
+                $info_s = "HANDSHAKE DONE ".sprintf("%x",$ssl);
+            } else {
+                $info_s = "WHERE: $where, RET: $ret";
+            }
+            push @{$userp //= []}, "$info_s\n";
+        });
+        $k_cnt++;
+        return http::CURL_PREREQFUNC_OK();
+    };
+    my $k;
+    my $e = http::curl_easy_init();
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_FUNCTION(), \&code_sub);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_DATA(), my $rt = []);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
+    $k |= http::curl_easy_perform($e);
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code sub, no var, no closure');
+    is($k_cnt, 0, 'callback function called: ok successes:'.$k_cnt);
+    is_deeply($rt, [], 'callback function called: ok data:'.join('',@$rt));
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'https://www.example.com/');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_DATA(), my $up = []);
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
+    $k |= http::curl_easy_perform($e);
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code sub, no var, no closure');
+    http::curl_easy_cleanup($e);
+    is($k_cnt, 1, 'callback function called: ok successes:'.$k_cnt);
+    is_deeply($rt, [], 'callback function called: ok data:'.join('',@$rt));
+    isnt(scalar(@$up), 0, 'callback function called: ok data:'.join('',@$up));
+}
+
+is($warn, 0, 'no warnings: '.join(',',@warns));

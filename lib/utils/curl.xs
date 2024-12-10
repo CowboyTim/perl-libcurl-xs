@@ -685,11 +685,15 @@ static int curl_ssh_keyfunction_cb(CURL *handle, const struct curl_khkey *knownk
             XPUSHs(sv_2mortal(newSVpv(knownkey->key, knownkey->len)));
         else
             XPUSHs(sv_2mortal(newSVpv(knownkey->key, 0)));
+    else
+        XPUSHs(&PL_sv_undef);
     if(foundkey->key)
         if(foundkey->len)
             XPUSHs(sv_2mortal(newSVpv(foundkey->key, foundkey->len)));
         else
             XPUSHs(sv_2mortal(newSVpv(foundkey->key, 0)));
+    else
+        XPUSHs(&PL_sv_undef);
     XPUSHs(sv_2mortal(newSViv((int)(IV)khmatch)));
     if(userp && SvOK((SV *)userp))
         XPUSHs((SV *)userp);
