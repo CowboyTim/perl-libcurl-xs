@@ -73,7 +73,7 @@ if($ssl_ctx_ok){
             push @{$userp //= []}, "Net::SSLeay not available, no SSL_CTX info callback";
         }
         $k_cnt++;
-        return http::CURL_PREREQFUNC_OK();
+        return http::CURLE_OK();
     };
     my $k;
     my $e = http::curl_easy_init();
