@@ -84,7 +84,7 @@ int cd_setup(CURL *e_http, int c_opt, int c_opt_d, SV *value, SV **pt){
         // we store "value" in the private struct's "cd" for this callback
         *pp = value;
         // we set the userp to the value of "value"
-        r = curl_easy_setopt(e_http, c_opt, (SV *)value);
+        r = curl_easy_setopt(e_http, c_opt, (void *)value);
         if(r == CURLE_OK)
             *pp = value;
         else
@@ -122,7 +122,6 @@ int cb_setup_pvt(CURL *e_http, int opt_f, int opt_d, void *cb_f, int cb_indx, SV
             *pp_c = NULL;
         }
     } else {
-        printf("cb_setup_pvt 1 %p %p\n", pp_c, pp_d);
         *pp_c = NULL;
         r = curl_easy_setopt(e_http, opt_f, NULL);
         if(*pp_d == NULL)
@@ -1028,34 +1027,18 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_DEBUGDATA:
                     cb_indx = CB_DEBUGFUNCTION;
                     cb_handle = 1;
-                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(dt);
-                    f = 1;
                     break;
                 case CURLOPT_IOCTLDATA:
                     cb_indx = CB_IOCTLFUNCTION;
                     cb_handle = 1;
-                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(dt);
-                    f = 1;
                     break;
                 case CURLOPT_SSH_KEYDATA:
                     cb_indx = CB_SSH_KEYFUNCTION;
                     cb_handle = 1;
-                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(dt);
-                    f = 1;
                     break;
                 case CURLOPT_SSL_CTX_DATA:
                     cb_indx = CB_SSL_CTX_FUNCTION;
                     cb_handle = 1;
-                    r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, dt);
-                    if(r == CURLE_OK)
-                        SvREFCNT_inc(dt);
-                    f = 1;
                     break;
                 case CURLOPT_READDATA:
                     cb_indx = CB_READFUNCTION;
