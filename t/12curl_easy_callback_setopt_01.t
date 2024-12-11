@@ -7,6 +7,8 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 use_ok('utils::curl', qw());
 
 use Fcntl;
+use Fcntl ':mode';
+use Socket;
 
 my @warns;
 my $warn = 0;
@@ -16,6 +18,7 @@ my $err_nr = 0;
 $::fh = undef;
 $::k_cnt = 0;
 my @flags;
+my @scks;
 sub setsock_sub {
     my ($curlfh, $purpose, $userp) = @_;
     $::k_cnt++;
@@ -32,6 +35,15 @@ sub setsock_sub {
         $err_nr++;
     }
     my $flags = fcntl($curlfh, F_GETFL, 0) or $err_nr++;
+    my $m = (stat($curlfh))[2];
+    if($m & S_IFSOCK){
+        setsockopt($curlfh, SOL_SOCKET, SO_REUSEADDR, 1)
+            or $err_nr++;
+        setsockopt($curlfh, SOL_SOCKET, SO_RCVBUF, 64*1024)
+            or $err_nr++;
+        push @scks, $m;
+    }
+    push @scks, $m;
     push @flags, $flags if defined $flags;
     if(ref($userp) 
             and $$userp eq 'ABC'
