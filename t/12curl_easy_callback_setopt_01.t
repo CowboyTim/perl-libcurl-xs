@@ -1,4 +1,4 @@
-use Test::More tests => 31;
+use Test::More tests => 42;
 use strict; use warnings;
 
 use FindBin;
@@ -6,26 +6,39 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl', qw());
 
+use Fcntl;
+
 my @warns;
 my $warn = 0;
 $SIG{__WARN__} = sub {$warn++; push @warns, $_[0]};
 
+my $err_nr = 0;
 $::fh = undef;
 $::k_cnt = 0;
+my @flags;
 sub setsock_sub {
-    my ($curlfd, $purpose, $userp) = @_;
-    print "# $curlfd, $purpose, $userp\n";
-    if($curlfd){
-        $::fh //= do{open(my $fh, "+<&=$curlfd") or die "open: $!"; $fh};
+    my ($curlfh, $purpose, $userp) = @_;
+    $::k_cnt++;
+    return http::CURL_SOCKOPT_OK() if fileno($curlfh) == 0;
+    print "# $curlfh, $purpose, $userp, FD=".fileno($curlfh)."\n";
+    if($curlfh){
+        open(my $fh, ">&", $curlfh)
+            or do { $err_nr++; return http::CURL_SOCKOPT_ERROR() };
+        my $fd = fileno($curlfh);
+        $::fh //= do{open(my $fh, "+<&=$fd")
+            or do { $err_nr++; return http::CURL_SOCKOPT_ERROR() }; $fh};
+        close($fh) or $err_nr++;
+    } else {
+        $err_nr++;
     }
+    my $flags = fcntl($curlfh, F_GETFL, 0) or $err_nr++;
+    push @flags, $flags if defined $flags;
     if(ref($userp) 
             and $$userp eq 'ABC'
             and $::k_cnt >= 1
             and $purpose == http::CURLSOCKTYPE_IPCXN()) {
-        $::k_cnt++;
         return http::CURL_SOCKOPT_ERROR();
     }
-    $::k_cnt++;
     return http::CURL_SOCKOPT_OK();
 }
 
@@ -74,6 +87,7 @@ is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
 $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
 $k |= http::curl_easy_perform($e);
 is($k, http::CURLE_COULDNT_CONNECT(), 'http::curl_easy_perform() return CURLE_COULDNT_CONNECT');
+is($err_nr, 0, 'error number: '.$err_nr);
 $k = 0;
 $k |= http::curl_easy_setopt($e, http::CURLOPT_OPENSOCKETFUNCTION());
 is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
@@ -84,7 +98,7 @@ is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
 $k |= http::curl_easy_setopt($e, http::CURLOPT_CLOSESOCKETDATA());
 is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
 $k |= http::curl_easy_perform($e);
-is($k, http::CURLE_ABORTED_BY_CALLBACK(), 'http::curl_easy_perform() return CURLE_OK');
+is($k, http::CURLE_ABORTED_BY_CALLBACK(), 'http::curl_easy_perform() return CURLE_ABORTED_BY_CALLBACK');
 is($::k_cnt, 4, 'callback function called: ok sockopt:'.$::k_cnt);
 is($::o_cnt, 2, 'callback function called: ok open:'.$::o_cnt);
 is($::c_cnt, 2, 'callback function called: ok close:'.$::c_cnt);
@@ -123,3 +137,13 @@ is($!, '', 'close: '.$!);
 local $! = 0;
 close($::fh);
 is($!, 'Bad file descriptor', 'close: '.$!);
+is($err_nr, 0, 'error number: '.$err_nr);
+is(scalar(@flags), 4, 'got flags');
+is($flags[0] & O_RDWR, O_RDWR, 'flags: O_RDWR');
+is($flags[0] & O_NONBLOCK, O_NONBLOCK, 'flags: O_NONBLOCK');
+is($flags[1] & O_RDWR, O_RDWR, 'flags: O_RDWR');
+is($flags[1] & O_NONBLOCK, O_NONBLOCK, 'flags: O_NONBLOCK');
+is($flags[2] & O_RDWR, O_RDWR, 'flags: O_RDWR');
+is($flags[2] & O_NONBLOCK, O_NONBLOCK, 'flags: O_NONBLOCK');
+is($flags[3] & O_RDWR, O_RDWR, 'flags: O_RDWR');
+is($flags[3] & O_NONBLOCK, O_NONBLOCK, 'flags: O_NONBLOCK');
