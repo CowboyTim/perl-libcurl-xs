@@ -13,9 +13,6 @@
 
 #define MAX_CB 17
 
-#define CB_FIRST CB_DEBUGFUNCTION
-#define CB_LAST  CB_XFERINFOFUNCTION
-
 enum perl_cb_function {
     CB_DEBUGFUNCTION = 0,
     CB_CLOSESOCKETFUNCTION,
@@ -170,22 +167,21 @@ int cd_setup_pvt(CURL *e_http, int opt_d, int cb_indx, SV *vl, SV **ret){
 static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userp){
     dTHX;
     dSP;
-    void *p = NULL;
-    int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(ri != CURLE_OK || !p)
+    if(!userp)
         return 0;
-    p_curl_easy *pe = (p_curl_easy *)p;
-    SV *cb = (SV *)(pe->cbs[CB_DEBUGFUNCTION].cb);
-    if(cb && SvTYPE(cb) != SVt_PVCV)
+    p_curl_easy *pe = (p_curl_easy *)userp;
+    SV *cd = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cb);
+    if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
+    XPUSHs(newRV(handle));
     XPUSHs(sv_2mortal(newSViv((IV)type)));
     XPUSHs(sv_2mortal(newSVpv(data, size)));
-    if(userp && SvOK((SV *)userp))
-        XPUSHs((SV *)userp);
+    if(cd && SvOK((SV *)cd))
+        XPUSHs((SV *)cd);
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
@@ -352,24 +348,23 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
     return 0;
 }
 
-static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *clientp){
+static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *userp){
     dTHX;
     dSP;
-    void *p = NULL;
-    int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(ri != CURLE_OK || !p)
-        return CURLIOE_OK; // consider OK?
-    p_curl_easy *pe = (p_curl_easy *)p;
-    SV *cb = (SV *)(pe->cbs[CB_IOCTLFUNCTION].cb);
-    if(cb && SvTYPE(cb) != SVt_PVCV)
-        return CURLIOE_OK; // consider OK?
+    if(!userp)
+        return 0;
+    p_curl_easy *pe = (p_curl_easy *)userp;
+    SV *cd = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cd);
+    SV *cb = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cb);
+    if(!cb || SvTYPE(cb) != SVt_PVCV)
+        return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
+    XPUSHs(newRV(handle));
     XPUSHs(sv_2mortal(newSViv(cmd)));
-    if(clientp && SvOK((SV *)clientp))
-        XPUSHs((SV *)clientp);
+    if(cd && SvOK((SV *)cd))
+        XPUSHs((SV *)cd);
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
@@ -626,20 +621,20 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
 static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     dTHX;
     dSP;
-    void *p = NULL;
-    int ri = curl_easy_getinfo(handle, CURLINFO_PRIVATE, &p);
-    if(ri != CURLE_OK || !p)
+    if(!userp)
         return 0;
-    p_curl_easy *pe = (p_curl_easy *)p;
+    p_curl_easy *pe = (p_curl_easy *)userp;
+    SV *cd = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cd);
     SV *cb = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cb);
-    if(cb && SvTYPE(cb) != SVt_PVCV)
+    if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
+    XPUSHs(newRV(handle));
     XPUSHs(sv_2mortal(newSViv(PTR2IV(sslctx))));
-    if(userp && SvOK((SV *)userp))
-        XPUSHs((SV *)userp);
+    if(cd && SvOK((SV *)cd))
+        XPUSHs((SV *)cd);
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
@@ -1056,22 +1051,13 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             }
             if(!f){
                 if(cb_indx != -1){
-                    if(curl_cb_opts[cb_indx].d == CURLOPT_SSL_CTX_DATA
-                    || curl_cb_opts[cb_indx].d == CURLOPT_IOCTLDATA
-                    || curl_cb_opts[cb_indx].d == CURLOPT_DEBUGDATA){
-                        r = cd_setup((CURL *)THIS(e_http), c_opt, cb_indx, dt, &prev_sv);
-                        //printf("cd_setup: %d %p %p\n", r, prev_sv, dt);
-                    } else {
-                        r = cd_setup_pvt((CURL *)THIS(e_http), c_opt, cb_indx, dt, &prev_sv);
-                        //printf("cd_setup_pvt: %d %p %p\n", r, prev_sv, dt);
-                    }
+                    r = cd_setup_pvt((CURL *)THIS(e_http), c_opt, cb_indx, dt, &prev_sv);
                     if(r == CURLE_OK){
                         if(dt)
                             SvREFCNT_inc(dt);
                     }
                     if(prev_sv)
                         SvREFCNT_dec(prev_sv);
-                    //printf("setopt: %d %p\n", r, prev_sv);
                 } else {
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                 }
@@ -1143,26 +1129,15 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                     break;
             }
-            if(curl_cb_opts[cb_indx].d == CURLOPT_DEBUGDATA
-            || curl_cb_opts[cb_indx].d == CURLOPT_IOCTLDATA
-            || curl_cb_opts[cb_indx].d == CURLOPT_SSL_CTX_DATA){
-                r = cb_setup((CURL *)THIS(e_http), c_opt, cb_indx, curl_cb_opts[cb_indx].fn, cb, &prev_sv);
-            } else {
-                r = cb_setup_pvt((CURL *)THIS(e_http), c_opt, curl_cb_opts[cb_indx].d, curl_cb_opts[cb_indx].fn, cb_indx, cb, &prev_sv);
-            }
+            r = cb_setup_pvt((CURL *)THIS(e_http), c_opt, curl_cb_opts[cb_indx].d, curl_cb_opts[cb_indx].fn, cb_indx, cb, &prev_sv);
             // first increase refcount, then decrease the old one, else we
             // might GC the object while we are just reusing the same var
-            void *ptr = NULL;
             if(r == CURLE_OK){
                 if(cb){
-                    curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &ptr);
-                    //printf("CB inc %p, %p\n", ptr, cb);
                     SvREFCNT_inc(cb);
                 }
             }
             if(prev_sv){
-                curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &ptr);
-                //printf("CB dec %p, %p\n", ptr, cb);
                 SvREFCNT_dec(prev_sv);
             }
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
@@ -1295,20 +1270,10 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
                     }
                 }
                 if(cbe->cd){
-                    SV *v_ptr = NULL;
                     SvREFCNT_inc((SV *)cbe->cd);
                     ((p_curl_easy *)ptr)->cbs[f].cd = cbe->cd;
                     printf("dup_ptr 2: %d, cb: %p, cd: %p, %p\n", f, cbe->cb, cbe->cd, ptr);
-                    if(f == CB_DEBUGFUNCTION
-                    || f == CB_IOCTLFUNCTION
-                    || f == CB_SSL_CTX_FUNCTION){
-                        // our original SV
-                        v_ptr = cbe->cd;
-                    } else {
-                        // our new CURLOPT_PRIVATE
-                        v_ptr = ptr;
-                    }
-                    int e = curl_easy_setopt(c, curl_cb_opts[f].d, v_ptr);
+                    int e = curl_easy_setopt(c, curl_cb_opts[f].d, ptr);
                     if(e != CURLE_OK){
                         SvREFCNT_dec((SV *)cbe->cd);
                         Safefree(ptr);
@@ -1809,13 +1774,13 @@ void E_DESTROY(SV *e_http=NULL)
         dSP;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        //printf("destroy_easy: %p\n", (CURL *)THIS(e_http));
+        printf("destroy_easy: %p\n", (CURL *)THIS(e_http));
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){
             //printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
-            for(int f=CB_FIRST; f<=CB_LAST; f++){
+            for(int f=0; f<MAX_CB; f++){
                 p_curl_cb *cbe = &((p_curl_easy *)p)->cbs[f];
                 if(cbe->cb){
                     SvREFCNT_dec(cbe->cb);
@@ -1829,7 +1794,7 @@ void E_DESTROY(SV *e_http=NULL)
             Safefree(p);
         }
         curl_easy_cleanup((CURL *)THIS(e_http));
-        //printf("after_destroy_easy: %p\n", (CURL *)THIS(e_http));
+        printf("after_destroy_easy: %p\n", (CURL *)THIS(e_http));
         XSRETURN_YES;
 
 MODULE = utils::curl                PACKAGE = http             PREFIX = R_

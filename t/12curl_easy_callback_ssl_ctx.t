@@ -33,7 +33,7 @@ if($ssl_ctx_ok){
 {
     $::k_cnt = 0;
     sub code_sub {
-        my ($sslctx, $userp) = @_;
+        my ($h, $sslctx, $userp) = @_;
         if($ssl_ctx_ok){
         Net::SSLeay::CTX_set_info_callback($sslctx, sub {
             my ($ssl,$where,$ret,$data) = @_;
