@@ -1009,10 +1009,12 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT
             || c_opt == CURLOPTTYPE_VALUES){
             if(value && SvOK(value)){
+                if(!looks_like_number(value))
+                    XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                 long _vl = (long)SvIV(value);
                 r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vl);
             } else {
-                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, NULL);
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, 0);
             }
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             int cb_indx = -1, cb_handle = 1, f = 0;
@@ -1294,10 +1296,12 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 SvREFCNT_dec(p);
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
             if(value && SvOK(value)){
+                if(!looks_like_number(value))
+                    XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                 curl_off_t _vo = (curl_off_t)SvIV(value);
                 r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vo);
             } else {
-                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, NULL);
+                r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, 0);
             }
         } else {
             XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
@@ -1337,7 +1341,7 @@ void L_curl_easy_option_by_id(...)
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         SV *id = POPs;
-        if(!id || !SvPOK(id))
+        if(!id || !looks_like_number(id))
             XSRETURN_UNDEF;
         const struct curl_easyoption *opt = curl_easy_option_by_id(SvIV(id));
         if(!opt)
@@ -1812,24 +1816,28 @@ void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        if(!value || !SvOK(value))
-            XSRETURN_UNDEF;
 
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
+            if(!looks_like_number(value))
+                XSRETURN_IV(CURLM_BAD_FUNCTION_ARGUMENT);
             long _vl = (long)SvIV(value);
             r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vl);
         } else if(c_opt >= CURLOPTTYPE_OBJECTPOINT && c_opt < CURLOPTTYPE_FUNCTIONPOINT){
             if(!SvPOK(value))
-                XSRETURN_UNDEF;
+                XSRETURN_IV(CURLM_BAD_FUNCTION_ARGUMENT);
             char *_vc = (char *)SvPV_nolen(value);
             r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vc);
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
-            XSRETURN_UNDEF;
+            if(!SvROK(value) || SvTYPE(SvRV(value)) != SVt_PVCV)
+                XSRETURN_IV(CURLM_BAD_FUNCTION_ARGUMENT);
+            r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, SvRV(value));
         } else if(c_opt >= CURLOPTTYPE_OFF_T && c_opt < CURLOPTTYPE_BLOB){
+            if(!looks_like_number(value))
+                XSRETURN_IV(CURLM_BAD_FUNCTION_ARGUMENT);
             long _vb = (long)SvIV(value);
             r = curl_multi_setopt((CURLM *)THIS(m_http), c_opt, _vb);
         } else {
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_FUNCTION_ARGUMENT);
         }
         XSRETURN_IV(r);
 

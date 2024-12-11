@@ -1,4 +1,4 @@
-use Test::More tests => 15;
+use Test::More tests => 31;
 use strict; use warnings;
 
 use FindBin;
@@ -49,3 +49,37 @@ eval {
     http::CURLOPT_();
 };
 like($@, qr/Undefined subroutine/, 'http::unknown_function() error check: CUIRLOPT_()');
+
+my $k;
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL());
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), undef);
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), '');
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), {});
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), []);
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), sub{});
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_URL(), \(""));
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE());
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), undef);
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), '');
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), {});
+is($k, http::CURLE_BAD_FUNCTION_ARGUMENT(), 'http::curl_easy_setopt() return CURLE_BAD_FUNCTION_ARGUMENT');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), 0.0);
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "0.0");
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "1.1");
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "0");
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "1");
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
