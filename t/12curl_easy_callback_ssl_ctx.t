@@ -78,9 +78,13 @@ if($ssl_ctx_ok){
     my $k;
     my $e = http::curl_easy_init();
     $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_FUNCTION(), \&code_sub);
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_DATA(), my $rt = []);
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
     $k |= http::curl_easy_perform($e);
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
     is($::k_cnt, 0, 'callback function called: ok successes:'.$::k_cnt);
