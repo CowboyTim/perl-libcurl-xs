@@ -63,7 +63,7 @@ sub open_sock_sub {
 
 $::c_cnt = 0;
 sub close_sock_sub {
-    my ($curlfd, $userp) = @_;
+    my ($curlfh, $userp) = @_;
     $::c_cnt++;
     return 0; # 0 means SUCCESS
 }

@@ -192,7 +192,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     return 0;
 }
 
-static int curl_closesocketfunction_cb(void *userp, curl_socket_t item){
+static int curl_closesocketfunction_cb(void *userp, curl_socket_t curlfd){
     dTHX;
     dSP;
     if(!userp)
@@ -205,7 +205,20 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t item){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)(int)item)));
+    PerlIO *f= PerlIO_openn(aTHX_ ":unix", "r+b", curlfd, 0, 0, NULL, 0, NULL);
+    if(!f){
+        SETERRNO(0, 0);
+    }
+    Perl_PerlIO_save_errno(aTHX_ f);
+    GV *gv = newGVgen("http::curl::easy");
+    IoIFP(GvIOn(gv)) = f;
+    IoOFP(GvIOn(gv)) = f;
+    IoTYPE(GvIOn(gv))= IoTYPE_NUMERIC;
+    SV *fh = sv_newmortal();
+    sv_setsv(fh, newRV_noinc((SV *)gv));
+    SvSETMAGIC(fh);
+    SETERRNO(0, 0);
+    XPUSHs(fh);
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
