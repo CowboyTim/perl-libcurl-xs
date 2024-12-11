@@ -1,4 +1,4 @@
-use Test::More tests => 31;
+use Test::More tests => 32;
 use strict; use warnings;
 
 use FindBin;
@@ -82,4 +82,7 @@ is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
 $k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "0");
 is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
 $k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "1");
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+
+$k = http::curl_easy_setopt($r1, http::CURLOPT_TCP_KEEPALIVE(), "2");
 is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
