@@ -49,121 +49,6 @@ typedef struct {
     p_curl_cb cbs[MAX_CB];
 } p_curl_easy;
 
-int cb_setup(CURL *e_http, int c_opt, int c_opt_f, void *cb_f, SV *cb, SV **pt){
-    int r = 0;
-    void *p = NULL;
-    SV **pp = NULL;
-    int t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
-    if(t == CURLE_OK && p){
-        pp = &(((p_curl_easy *)p)->cbs[c_opt_f].cb);
-        *pt = *pp;
-    }
-    if(cb){
-        r = curl_easy_setopt(e_http, c_opt, cb_f);
-        if(r == CURLE_OK)
-            *pp = cb;
-        else
-            *pp = NULL;
-    } else {
-        *pp = NULL;
-        r = curl_easy_setopt(e_http, c_opt, NULL);
-    }
-    return r;
-}
-
-int cd_setup(CURL *e_http, int c_opt, int c_opt_d, SV *value, SV **pt){
-    int r = 0;
-    void *p = NULL;
-    SV **pp = NULL;
-    int t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
-    if(t == CURLE_OK && p){
-        pp = &(((p_curl_easy *)p)->cbs[c_opt_d].cd);
-        *pt = *pp;
-    }
-    if(value){
-        // we store "value" in the private struct's "cd" for this callback
-        *pp = value;
-        // we set the userp to the value of "value"
-        r = curl_easy_setopt(e_http, c_opt, (void *)value);
-        if(r == CURLE_OK)
-            *pp = value;
-        else
-            *pp = NULL;
-    } else {
-        *pp = NULL;
-        r = curl_easy_setopt(e_http, c_opt, NULL);
-    }
-    return r;
-}
-
-int cb_setup_pvt(CURL *e_http, int opt_f, int opt_d, void *cb_f, int cb_indx, SV *cb, SV **ret){
-    int r = 0, o = 0, t = 0;
-    void *p = NULL;
-    SV **pp_c = NULL;
-    SV **pp_d = NULL;
-    t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
-    if(t == CURLE_OK && p){
-        pp_c = &(((p_curl_easy *)p)->cbs[cb_indx].cb);
-        pp_d = &(((p_curl_easy *)p)->cbs[cb_indx].cd);
-        *ret = *pp_c;
-    }
-    if(cb){
-        r = curl_easy_setopt(e_http, opt_f, cb_f);
-        if(r == CURLE_OK){
-            // we set the userp to the vl of private data
-            o = curl_easy_setopt(e_http, opt_d, p);
-            if(o == CURLE_OK){
-                *pp_c = cb;
-            } else {
-                *pp_c = NULL;
-                o = curl_easy_setopt(e_http, opt_f, NULL);
-                if(*pp_d == NULL)
-                    o = curl_easy_setopt(e_http, opt_d, NULL);
-            }
-        } else {
-            *pp_c = NULL;
-            if(*pp_d == NULL)
-                o = curl_easy_setopt(e_http, opt_d, NULL);
-        }
-    } else {
-        *pp_c = NULL;
-        r = curl_easy_setopt(e_http, opt_f, NULL);
-        if(*pp_d == NULL)
-            o = curl_easy_setopt(e_http, opt_d, NULL);
-    }
-    return r;
-}
-
-int cd_setup_pvt(CURL *e_http, int opt_d, int cb_indx, SV *vl, SV **ret){
-    int r = 0;
-    void *p = NULL;
-    SV **pp_d = NULL;
-    SV **pp_c = NULL;
-    int t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
-    if(t == CURLE_OK && p){
-        pp_c = &(((p_curl_easy *)p)->cbs[cb_indx].cb);
-        pp_d = &(((p_curl_easy *)p)->cbs[cb_indx].cd);
-        *ret = *pp_d;
-    }
-    if(vl){
-        // we set the userp to the vl of private data
-        r = curl_easy_setopt(e_http, opt_d, p);
-        if(r == CURLE_OK){
-            *pp_d = vl;
-        } else {
-            *pp_d = NULL;
-            if(*pp_c == NULL)
-                r = curl_easy_setopt(e_http, opt_d, NULL);
-        }
-    } else {
-        // we reset this callback's "cd" in the private struct
-        *pp_d = NULL;
-        if(*pp_c == NULL)
-            r = curl_easy_setopt(e_http, opt_d, NULL);
-    }
-    return r;
-}
-
 static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userp){
     dTHX;
     dSP;
@@ -194,7 +79,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
 static int curl_closesocketfunction_cb(void *userp, curl_socket_t curlfd){
     dTHX;
     dSP;
-    //printf("curl_closesocketfunction_cb\n");
+    printf("curl_closesocketfunction_cb\n");
     if(!userp)
         return 0;
     p_curl_easy *pe = (p_curl_easy *)userp;
@@ -237,18 +122,18 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t curlfd){
 static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct curl_sockaddr *address){
     dTHX;
     dSP;
-    //printf("curl_opensocketfunction_cb\n");
+    printf("curl_opensocketfunction_cb\n");
     if(!userp)
         return CURL_SOCKET_BAD;
-    //printf("curl_opensocketfunction_cb 11 %p\n", userp);
+    printf("curl_opensocketfunction_cb 11 %p\n", userp);
     p_curl_easy *pe = (p_curl_easy *)userp;
     SV *cd = (SV *)(pe->cbs[CB_OPENSOCKETFUNCTION].cd);
-    //printf("curl_opensocketfunction_cb 12\n");
+    printf("curl_opensocketfunction_cb 12\n");
     SV *cb = (SV *)(pe->cbs[CB_OPENSOCKETFUNCTION].cb);
-    //printf("curl_opensocketfunction_cb 13 %p\n", cb);
+    printf("curl_opensocketfunction_cb 13 %p\n", cb);
     if(!cb || SvTYPE(cb) != SVt_PVCV)
         return CURL_SOCKET_BAD;
-    //printf("curl_opensocketfunction_cb 2 %p %p\n", cb, cd);
+    printf("curl_opensocketfunction_cb 2 %p %p\n", cb, cd);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -621,13 +506,17 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
 static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     dTHX;
     dSP;
+    printf("curl_ssl_ctx_function_cb 1 %p %p %p\n", handle, sslctx, userp);
     if(!userp)
         return 0;
     p_curl_easy *pe = (p_curl_easy *)userp;
+    printf("curl_ssl_ctx_function_cb 2 %p %p %p\n", handle, sslctx, pe);
     SV *cd = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cd);
     SV *cb = (SV *)(pe->cbs[CB_SSL_CTX_FUNCTION].cb);
+    printf("curl_ssl_ctx_function_cb 3 %p %p %p %p\n", handle, sslctx, cb, cd);
     if(!cb || SvTYPE(cb) != SVt_PVCV)
         return 0;
+    printf("curl_ssl_ctx_function_cb 4 %p %p %p\n", handle, sslctx, cd);
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
@@ -645,6 +534,7 @@ static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
         res = POPi;
     FREETMPS;
     LEAVE;
+    printf("curl_ssl_ctx_function_cb 3\n");
     return res;
 }
 
@@ -706,24 +596,184 @@ static int curl_xferinfofunction_cb(void *userp, curl_off_t dltotal, curl_off_t 
 }
 
 static const p_c_fn curl_cb_opts[] = {
-    [ 0] = {.f=CURLOPT_DEBUGFUNCTION,           .d=CURLOPT_DEBUGDATA,           .fn = curl_debugfunction_cb},
-    [ 1] = {.f=CURLOPT_CLOSESOCKETFUNCTION,     .d=CURLOPT_CLOSESOCKETDATA,     .fn = curl_closesocketfunction_cb},
-    [ 2] = {.f=CURLOPT_OPENSOCKETFUNCTION,      .d=CURLOPT_OPENSOCKETDATA,      .fn = curl_opensocketfunction_cb},
-    [ 3] = {.f=CURLOPT_HEADERFUNCTION,          .d=CURLOPT_HEADERDATA,          .fn = curl_headerfunction_cb},
-    [ 4] = {.f=CURLOPT_HSTSREADFUNCTION,        .d=CURLOPT_HSTSREADDATA,        .fn = curl_hstsreadfunction_cb},
-    [ 5] = {.f=CURLOPT_HSTSWRITEFUNCTION,       .d=CURLOPT_HSTSWRITEDATA,       .fn = curl_hstswritefunction_cb},
-    [ 6] = {.f=CURLOPT_IOCTLFUNCTION,           .d=CURLOPT_IOCTLDATA,           .fn = curl_ioctlfunction_cb},
-    [ 7] = {.f=CURLOPT_PREREQFUNCTION,          .d=CURLOPT_PREREQDATA,          .fn = curl_prereqfunction_cb},
-    [ 8] = {.f=CURLOPT_PROGRESSFUNCTION,        .d=CURLOPT_PROGRESSDATA,        .fn = curl_progressfunction_cb},
-    [ 9] = {.f=CURLOPT_READFUNCTION,            .d=CURLOPT_READDATA,            .fn = curl_readfunction_cb},
-    [10] = {.f=CURLOPT_WRITEFUNCTION,           .d=CURLOPT_WRITEDATA,           .fn = curl_writefunction_cb},
-    [11] = {.f=CURLOPT_RESOLVER_START_FUNCTION, .d=CURLOPT_RESOLVER_START_DATA, .fn = curl_resolver_start_function_cb},
-    [12] = {.f=CURLOPT_SEEKFUNCTION,            .d=CURLOPT_SEEKDATA,            .fn = curl_seekfunction_cb},
-    [13] = {.f=CURLOPT_SOCKOPTFUNCTION,         .d=CURLOPT_SOCKOPTDATA,         .fn = curl_sockoptfunction_cb},
-    [14] = {.f=CURLOPT_SSL_CTX_FUNCTION,        .d=CURLOPT_SSL_CTX_DATA,        .fn = curl_ssl_ctx_function_cb},
-    [15] = {.f=CURLOPT_TRAILERFUNCTION,         .d=CURLOPT_TRAILERDATA,         .fn = curl_trailerfunction_cb},
-    [16] = {.f=CURLOPT_XFERINFOFUNCTION,        .d=CURLOPT_XFERINFODATA,        .fn = curl_xferinfofunction_cb}
+    [CB_DEBUGFUNCTION] = {
+        .f=CURLOPT_DEBUGFUNCTION,
+        .d=CURLOPT_DEBUGDATA,
+        .fn = curl_debugfunction_cb
+    },
+    [CB_CLOSESOCKETFUNCTION] = {
+        .f=CURLOPT_CLOSESOCKETFUNCTION,
+        .d=CURLOPT_CLOSESOCKETDATA,
+        .fn = curl_closesocketfunction_cb
+    },
+    [CB_OPENSOCKETFUNCTION] = {
+        .f=CURLOPT_OPENSOCKETFUNCTION,
+        .d=CURLOPT_OPENSOCKETDATA,
+        .fn = curl_opensocketfunction_cb
+    },
+    [CB_HEADERFUNCTION] = {
+        .f=CURLOPT_HEADERFUNCTION,
+        .d=CURLOPT_HEADERDATA,
+        .fn = curl_headerfunction_cb
+    },
+    [CB_HSTSREADFUNCTION] = {
+        .f=CURLOPT_HSTSREADFUNCTION,
+        .d=CURLOPT_HSTSREADDATA,
+        .fn = curl_hstsreadfunction_cb
+    },
+    [CB_HSTSWRITEFUNCTION] = {
+        .f=CURLOPT_HSTSWRITEFUNCTION,
+        .d=CURLOPT_HSTSWRITEDATA,
+        .fn = curl_hstswritefunction_cb
+    },
+    [CB_IOCTLFUNCTION] = {
+        .f=CURLOPT_IOCTLFUNCTION,
+        .d=CURLOPT_IOCTLDATA,
+        .fn = curl_ioctlfunction_cb
+    },
+    [CB_PREREQFUNCTION] = {
+        .f=CURLOPT_PREREQFUNCTION,
+        .d=CURLOPT_PREREQDATA,
+        .fn = curl_prereqfunction_cb
+    },
+    [CB_PROGRESSFUNCTION] = {
+        .f=CURLOPT_PROGRESSFUNCTION,
+        .d=CURLOPT_PROGRESSDATA,
+        .fn = curl_progressfunction_cb
+    },
+    [CB_READFUNCTION] = {
+        .f=CURLOPT_READFUNCTION,
+        .d=CURLOPT_READDATA,
+        .fn = curl_readfunction_cb
+    },
+    [CB_WRITEFUNCTION] = {
+        .f=CURLOPT_WRITEFUNCTION,
+        .d=CURLOPT_WRITEDATA,
+        .fn = curl_writefunction_cb
+    },
+    [CB_RESOLVER_START_FUNCTION] = {
+        .f=CURLOPT_RESOLVER_START_FUNCTION,
+        .d=CURLOPT_RESOLVER_START_DATA,
+        .fn = curl_resolver_start_function_cb
+    },
+    [CB_SEEKFUNCTION] = {
+        .f=CURLOPT_SEEKFUNCTION,
+        .d=CURLOPT_SEEKDATA,
+        .fn = curl_seekfunction_cb
+    },
+    [CB_SOCKOPTFUNCTION] = {
+        .f=CURLOPT_SOCKOPTFUNCTION,
+        .d=CURLOPT_SOCKOPTDATA,
+        .fn = curl_sockoptfunction_cb
+    },
+    [CB_SSL_CTX_FUNCTION] = {
+        .f=CURLOPT_SSL_CTX_FUNCTION,
+        .d=CURLOPT_SSL_CTX_DATA,
+        .fn = curl_ssl_ctx_function_cb
+    },
+    [CB_TRAILERFUNCTION] = {
+        .f=CURLOPT_TRAILERFUNCTION,
+        .d=CURLOPT_TRAILERDATA,
+        .fn = curl_trailerfunction_cb
+    },
+    [CB_XFERINFOFUNCTION] = {
+        .f=CURLOPT_XFERINFOFUNCTION,
+        .d=CURLOPT_XFERINFODATA,
+        .fn = curl_xferinfofunction_cb
+    }
 };
+
+int cb_setup_pvt(CURL *e_http, int cb_indx, SV *cb, SV **ret){
+    int r = 0, o = 0, t = 0;
+    void *p = NULL;
+    SV **pp_c = NULL;
+    SV **pp_d = NULL;
+    int opt_f  = curl_cb_opts[cb_indx].f;
+    int opt_d  = curl_cb_opts[cb_indx].d;
+    void *cb_f = curl_cb_opts[cb_indx].fn;
+    printf("cb_setup_pvt %d %d %p\n", opt_f, opt_d, cb_f);
+    t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
+    if(t == CURLE_OK){
+        if(p == NULL)
+            croak("curl_easy_getinfo failed %d", t);
+        pp_c = &(((p_curl_easy *)p)->cbs[cb_indx].cb);
+        pp_d = &(((p_curl_easy *)p)->cbs[cb_indx].cd);
+        *ret = *pp_c;
+    }
+    if(p == NULL)
+        croak("curl_easy_getinfo failed %d", t);
+    if(cb){
+        printf("cb_setup_pvt set f %d %p %p\n", opt_f, cb, cb_f);
+        r = curl_easy_setopt(e_http, opt_f, cb_f);
+        if(r == CURLE_OK){
+            printf("cb_setup_pvt set p %d %p %p %p\n", opt_d, cb, cb_f, p);
+            // we set the userp to the vl of private data
+            o = curl_easy_setopt(e_http, opt_d, p);
+            if(o == CURLE_OK){
+                *pp_c = cb;
+            } else {
+                printf("cb_setup_pvt err %d\n", o);
+                *pp_c = NULL;
+                o = curl_easy_setopt(e_http, opt_f, NULL);
+                if(o != CURLE_OK)
+                    croak("curl_easy_setopt failed %d", o);
+                if(*pp_d == NULL){
+                    o = curl_easy_setopt(e_http, opt_d, NULL);
+                    if(o != CURLE_OK)
+                        croak("curl_easy_setopt failed %d", o);
+                }
+            }
+        } else {
+            *pp_c = NULL;
+            if(*pp_d == NULL){
+                o = curl_easy_setopt(e_http, opt_d, NULL);
+                if(o != CURLE_OK)
+                    croak("curl_easy_setopt failed %d", o);
+            }
+        }
+    } else {
+        *pp_c = NULL;
+        r = curl_easy_setopt(e_http, opt_f, NULL);
+        if(*pp_d == NULL){
+            o = curl_easy_setopt(e_http, opt_d, NULL);
+            if(o != CURLE_OK)
+                croak("curl_easy_setopt failed %d", o);
+        }
+    }
+    return r;
+}
+
+int cd_setup_pvt(CURL *e_http, int cb_indx, SV *vl, SV **ret){
+    int r = 0;
+    void *p = NULL;
+    SV **pp_d = NULL;
+    SV **pp_c = NULL;
+    int opt_d = curl_cb_opts[cb_indx].d;
+    int t = curl_easy_getinfo(e_http, CURLINFO_PRIVATE, &p);
+    if(t == CURLE_OK && p){
+        pp_c = &(((p_curl_easy *)p)->cbs[cb_indx].cb);
+        pp_d = &(((p_curl_easy *)p)->cbs[cb_indx].cd);
+        *ret = *pp_d;
+    }
+    if(vl){
+        // we set the userp to the vl of private data
+        r = curl_easy_setopt(e_http, opt_d, p);
+        if(r == CURLE_OK){
+            *pp_d = vl;
+        } else {
+            *pp_d = NULL;
+            if(*pp_c == NULL)
+                r = curl_easy_setopt(e_http, opt_d, NULL);
+        }
+    } else {
+        // we reset this callback's "cd" in the private struct
+        *pp_d = NULL;
+        if(*pp_c == NULL)
+            r = curl_easy_setopt(e_http, opt_d, NULL);
+    }
+    return r;
+}
+
 
 
 MODULE = utils::curl                PACKAGE = http           PREFIX = L_
@@ -898,7 +948,7 @@ void L_curl_easy_init()
         Newxz(ptr, 1, p_curl_easy);
         if(!ptr)
             XSRETURN_IV(CURLE_OUT_OF_MEMORY);
-        //printf("c: %p, %p\n", c, ptr);
+        printf("c: %p, %p\n", c, ptr);
         int t = curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
         if(t != CURLE_OK){
             Safefree(ptr);
@@ -919,7 +969,7 @@ void L_curl_easy_cleanup(SV *e_http=NULL)
         POPs;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        //printf("e: %p\n", (CURL *)THIS(e_http));
+        printf("e: %p\n", (CURL *)THIS(e_http));
         sv_setref_pv(e_http, NULL, NULL);
         XSRETURN_UNDEF;
 
@@ -1051,7 +1101,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             }
             if(!f){
                 if(cb_indx != -1){
-                    r = cd_setup_pvt((CURL *)THIS(e_http), c_opt, cb_indx, dt, &prev_sv);
+                    r = cd_setup_pvt((CURL *)THIS(e_http), cb_indx, dt, &prev_sv);
                     if(r == CURLE_OK){
                         if(dt)
                             SvREFCNT_inc(dt);
@@ -1129,7 +1179,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
                     break;
             }
-            r = cb_setup_pvt((CURL *)THIS(e_http), c_opt, curl_cb_opts[cb_indx].d, curl_cb_opts[cb_indx].fn, cb_indx, cb, &prev_sv);
+            r = cb_setup_pvt((CURL *)THIS(e_http), cb_indx, cb, &prev_sv);
             // first increase refcount, then decrease the old one, else we
             // might GC the object while we are just reusing the same var
             if(r == CURLE_OK){
@@ -1152,7 +1202,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         } else {
             XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
         }
-        //printf("r3: %d\n", r);
+        printf("r3: %d\n", r);
         if(r == -1)
             XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
         if(r != CURLE_OK)
@@ -1224,12 +1274,8 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         CURL *c = curl_easy_duphandle((CURL *)THIS(e_http));
         if(!c)
             XSRETURN_NO;
-        int d = curl_easy_setopt(c, CURLOPT_PRIVATE, NULL);
-        if(d != CURLE_OK){
-            curl_easy_cleanup(c);
-            croak("Problem setting CURLOPT_PRIVATE NULL: %s", curl_easy_strerror(d));
-        }
-
+        void *old_p = NULL;
+        int r = curl_easy_getinfo(c, CURLINFO_PRIVATE, &old_p);
         // don't fetch CURLOPT_PRIVATE, curl_easy_duphandle copies it, but we
         // won't do anything with it, as it's part of the original e_http
         // handle: also DON'T clear that, just the ptr
@@ -1239,7 +1285,7 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
             curl_easy_cleanup(c);
             XSRETURN_IV(CURLE_OUT_OF_MEMORY);
         }
-        d = curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
+        int d = curl_easy_setopt(c, CURLOPT_PRIVATE, ptr);
         if(d != CURLE_OK){
             Safefree(ptr);
             curl_easy_cleanup(c);
@@ -1247,41 +1293,39 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         }
 
         // fetch from the original handle the FUNCTION opts
-        void *old_p = NULL;
-        int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &old_p);
-        printf("d: %lld, %p, %p, %p, %p\n", (long long)c, c, ptr, old_p, (CURL *)THIS(e_http));
+        printf("d: %lld, %p, new P: %p, old P: %p, old H: %p\n", (long long)c, c, ptr, old_p, (CURL *)THIS(e_http));
         if(r == CURLE_OK && old_p){
             for(int f=0; f<MAX_CB; f++){
                 // set NULL, but not needed as we used Newxz()
                 ((p_curl_easy *)ptr)->cbs[f].cb = NULL;
                 ((p_curl_easy *)ptr)->cbs[f].cd = NULL;
 
-                p_curl_cb *cbe = &((p_curl_easy *)old_p)->cbs[f];
-                if(cbe->cb){
-                    printf("dup_ptr 1: %d, cb: %p, cd: %p, %p\n", f, cbe->cb, cbe->cd, ptr);
-                    SvREFCNT_inc((SV *)cbe->cb);
-                    ((p_curl_easy *)ptr)->cbs[f].cb = cbe->cb;
-                    int e = curl_easy_setopt(c, curl_cb_opts[f].f, cbe->cb);
+                p_curl_cb *cb_orig = &((p_curl_easy *)old_p)->cbs[f];
+                if(cb_orig->cb){
+                    printf("dup_ptr 1: %d, cb: %p, %p\n", f, cb_orig->cb, ptr);
+                    SvREFCNT_inc((SV *)cb_orig->cb);
+                    ((p_curl_easy *)ptr)->cbs[f].cb = cb_orig->cb;
+                    int e = curl_easy_setopt(c, curl_cb_opts[f].f, curl_cb_opts[f].fn);
                     if(e != CURLE_OK){
-                        SvREFCNT_dec((SV *)cbe->cb);
+                        SvREFCNT_dec((SV *)cb_orig->cb);
                         Safefree(ptr);
                         curl_easy_cleanup(c);
                         croak("Problem setting callback index: %d: %s", f, curl_easy_strerror(e));
                     }
                 }
-                if(cbe->cd){
-                    SvREFCNT_inc((SV *)cbe->cd);
-                    ((p_curl_easy *)ptr)->cbs[f].cd = cbe->cd;
-                    printf("dup_ptr 2: %d, cb: %p, cd: %p, %p\n", f, cbe->cb, cbe->cd, ptr);
+                if(cb_orig->cd){
+                    SvREFCNT_inc((SV *)cb_orig->cd);
+                    ((p_curl_easy *)ptr)->cbs[f].cd = cb_orig->cd;
+                    printf("dup_ptr 2: %d, cd: %p, %p\n", f, cb_orig->cd, ptr);
                     int e = curl_easy_setopt(c, curl_cb_opts[f].d, ptr);
                     if(e != CURLE_OK){
-                        SvREFCNT_dec((SV *)cbe->cd);
+                        SvREFCNT_dec((SV *)cb_orig->cd);
                         Safefree(ptr);
                         curl_easy_cleanup(c);
                         croak("Problem setting callback index: %d: %s", f, curl_easy_strerror(e));
                     }
                 }
-                //printf("dup: %d, cb: %p, cd: %p\n", f, cbe->cb, cbe->cd);
+                printf("dup: %d, cb: %p, cd: %p\n", f, cb_orig->cb, cb_orig->cd);
             }
         }
         if(!c)
@@ -1439,7 +1483,6 @@ void L_curl_easy_send(SV *e_http=NULL, SV *data=&PL_sv_undef, )
         r = curl_easy_send((CURL *)THIS(e_http), SvPV_nolen(data), SvCUR(data), &sent_sz);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
-        //printf("data: %s %d\n", SvPV_nolen(data), sent_sz);
         XSRETURN_IV(0);
 
 void L_curl_easy_recv(SV *e_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0)
@@ -1487,7 +1530,7 @@ void L_curl_multi_cleanup(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("m: %p\n", (CURLM *)THIS(m_http));
+        printf("m: %p\n", (CURLM *)THIS(m_http));
         // go via DESTROY, as we have to destroy SV's too
         sv_setref_pv(m_http, NULL, NULL);
         XSRETURN_IV(0);
@@ -1514,7 +1557,7 @@ void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
+        printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -1531,7 +1574,7 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_UNDEF;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        //printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
+        printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -1693,7 +1736,7 @@ void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=NULL, int timeout=0, SV *nu
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("WAIT: %p, T: %d\n", (CURLM *)THIS(m_http), timeout);
+        printf("WAIT: %p, T: %d\n", (CURLM *)THIS(m_http), timeout);
         r = curl_multi_wait((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -1740,7 +1783,7 @@ void M_DESTROY(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("destroy_multi: %p\n", (CURLM *)THIS(m_http));
+        printf("destroy_multi: %p\n", (CURLM *)THIS(m_http));
         // get all handles and remove them
 #if (LIBCURL_VERSION_NUM >= 0x080400)
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
@@ -1760,7 +1803,7 @@ void M_DESTROY(SV *m_http=NULL)
             warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), (CURLM *)THIS(m_http));
             XSRETURN_NO;
         }
-        //printf("after_destroy_curl_multi: %p\n", (CURLM *)THIS(m_http));
+        printf("after_destroy_curl_multi: %p\n", (CURLM *)THIS(m_http));
         XSRETURN_YES;
 
 MODULE = utils::curl                PACKAGE = http::curl::easy             PREFIX = E_
@@ -1778,7 +1821,7 @@ void E_DESTROY(SV *e_http=NULL)
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         if(r == CURLE_OK && p){
-            //printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
+            printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
             for(int f=0; f<MAX_CB; f++){
                 p_curl_cb *cbe = &((p_curl_easy *)p)->cbs[f];
@@ -1792,6 +1835,8 @@ void E_DESTROY(SV *e_http=NULL)
                 }
             }
             Safefree(p);
+            p = NULL;
+            curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
         }
         curl_easy_cleanup((CURL *)THIS(e_http));
         printf("after_destroy_easy: %p\n", (CURL *)THIS(e_http));
