@@ -706,14 +706,16 @@ int cb_setup_pvt(CURL *e_http, int cb_indx, SV *cb, SV **ret){
         printf("cb_setup_pvt set f %d %p %p\n", opt_f, cb, cb_f);
         r = curl_easy_setopt(e_http, opt_f, cb_f);
         if(r == CURLE_OK){
+            *pp_c = cb;
             printf("cb_setup_pvt set p %d %p %p %p\n", opt_d, cb, cb_f, p);
             // we set the userp to the vl of private data
             o = curl_easy_setopt(e_http, opt_d, p);
             if(o == CURLE_OK){
-                *pp_c = cb;
+                *pp_d = cb;
             } else {
                 printf("cb_setup_pvt err %d\n", o);
                 *pp_c = NULL;
+                *pp_d = NULL;
                 o = curl_easy_setopt(e_http, opt_f, NULL);
                 if(o != CURLE_OK)
                     croak("curl_easy_setopt failed %d", o);
@@ -725,11 +727,10 @@ int cb_setup_pvt(CURL *e_http, int cb_indx, SV *cb, SV **ret){
             }
         } else {
             *pp_c = NULL;
-            if(*pp_d == NULL){
-                o = curl_easy_setopt(e_http, opt_d, NULL);
-                if(o != CURLE_OK)
-                    croak("curl_easy_setopt failed %d", o);
-            }
+            *pp_d = NULL;
+            o = curl_easy_setopt(e_http, opt_d, NULL);
+            if(o != CURLE_OK)
+                croak("curl_easy_setopt failed %d", o);
         }
     } else {
         *pp_c = NULL;
@@ -1305,13 +1306,6 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
                     printf("dup_ptr 1: %d, cb: %p, %p\n", f, cb_orig->cb, ptr);
                     SvREFCNT_inc((SV *)cb_orig->cb);
                     ((p_curl_easy *)ptr)->cbs[f].cb = cb_orig->cb;
-                    int e = curl_easy_setopt(c, curl_cb_opts[f].f, curl_cb_opts[f].fn);
-                    if(e != CURLE_OK){
-                        SvREFCNT_dec((SV *)cb_orig->cb);
-                        Safefree(ptr);
-                        curl_easy_cleanup(c);
-                        croak("Problem setting callback index: %d: %s", f, curl_easy_strerror(e));
-                    }
                 }
                 if(cb_orig->cd){
                     SvREFCNT_inc((SV *)cb_orig->cd);
