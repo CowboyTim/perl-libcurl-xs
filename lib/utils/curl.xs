@@ -232,10 +232,14 @@ static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *u
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    int r = call_sv(cb, G_SCALAR);
+    SPAGAIN;
+    int res = 0;
+    if(r >= 1)
+        res = POPi;
     FREETMPS;
     LEAVE;
-    return 0;
+    return res;
 }
 
 static int curl_hstsreadfunction_cb(char *buffer, size_t size, size_t nitems, void *userp){
@@ -1407,6 +1411,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     // * directly, but we need to keep the SV IO::Handle in our
                     // private struct. If there is a callback set, we keep things
                     // as they were
+                    //printf("CURLOPT_HEADERDATA ONE\n");
                     t = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
                     if(t != CURLE_OK)
                         XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
@@ -1424,6 +1429,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
 
                         //printf("CURLOPT_HEADERDATA 1\n");
                         if(((p_curl_easy *)p)->cbs[CB_HEADERFUNCTION].cb == NULL){
+                            //printf("CURLOPT_HEADERDATA 2 %p\n", dt);
                             if(!SvROK(dt) || SvTYPE(SvRV(dt)) != SVt_PVGV)
                                 XSRETURN_IV(CURLE_OK);
                             GV *gv = (GV *)SvRV(dt);
