@@ -1,5 +1,5 @@
 use strict; use warnings;
-my $ofn = shift @ARGV || "curl_constants.xsh";
+my $ofn = "curl_constants.xsh";
 my @c;
 # read in CURLE_ enum constants from the curl.h header file
 my $inc_flags = $ENV{LIBCURL_INC} ||= do {

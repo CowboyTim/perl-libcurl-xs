@@ -28,7 +28,10 @@ $ENV{LIBCURL_LIB} ||= do {
     $lib_flags;
 };
 
-do './curl_constants.PL' or die $@, $?;
+{
+    local @ARGV = ();
+    do './curl_constants.PL' or die $@, $?;
+}
 
 use Config;
 
