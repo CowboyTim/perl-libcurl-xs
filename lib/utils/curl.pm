@@ -2,7 +2,7 @@ package utils::curl;
 
 use strict; use warnings;
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 require DynaLoader;
 our @ISA = qw(DynaLoader);
