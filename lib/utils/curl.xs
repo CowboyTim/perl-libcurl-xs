@@ -2156,12 +2156,18 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
-        if(rt != CURLM_OK)
-            XSRETURN_IV(rt);
         AV *re = (AV *)sv_2mortal((SV *)newAV());
         AV *we = (AV *)sv_2mortal((SV *)newAV());
         AV *ee = (AV *)sv_2mortal((SV *)newAV());
+        rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
+        if(rt != CURLM_OK){
+            POPs;
+            XPUSHs(newSViv(rt));
+            XPUSHs(newRV_noinc((SV *)re));
+            XPUSHs(newRV_noinc((SV *)we));
+            XPUSHs(newRV_noinc((SV *)ee));
+        }
+        //printf("max: %d\n", max);
         for(int i=0; i<max; i++){
             if(FD_ISSET(i, &r))
                 av_push(re, newSViv(i));
@@ -2170,6 +2176,8 @@ void L_curl_multi_fdset(SV *m_http=NULL)
             if(FD_ISSET(i, &e))
                 av_push(ee, newSViv(i));
         }
+        POPs;
+        XPUSHs(newSViv(rt));
         XPUSHs(newRV_noinc((SV *)re));
         XPUSHs(newRV_noinc((SV *)we));
         XPUSHs(newRV_noinc((SV *)ee));
