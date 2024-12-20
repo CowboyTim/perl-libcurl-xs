@@ -45,8 +45,7 @@ my %uniq;
 @c = sort keys %uniq;
 
 print "Building curl constants for your libcurl version\n";
-open(my $c_fh, ">", $ofn)
-    or die "Can't create: $!\n";
+open(my $c_fh, ">", $ofn) or die "Can't create $ofn: $!\n";
 print {$c_fh} <<'HERE';
 BOOT:
 {
@@ -58,5 +57,6 @@ foreach my $c (@c) {
 print {$c_fh} <<'HERE';
 }
 HERE
+close($c_fh) or die "Can't close $ofn: $!\n";
 
 1;
