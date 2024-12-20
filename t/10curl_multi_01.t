@@ -82,6 +82,7 @@ $SIG{__WARN__} = sub { push @warn, $_[0] };
     my $ri1 = http::curl_multi_info_read($r);
     is_deeply($ri1, {
         msg => http::CURLMSG_DONE(),
+        easy_handle => $u,
         result => http::CURLE_URL_MALFORMAT(),
     }, 'http::curl_multi_info_read(): return value ok');
     my $ri2 = http::curl_multi_info_read($r);

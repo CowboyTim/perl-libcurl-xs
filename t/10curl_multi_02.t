@@ -6,6 +6,9 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl');
 
+my @warn;
+$SIG{__WARN__} = sub { push @warn, $_[0] };
+
 http::curl_global_trace();
 http::curl_global_init(http::CURL_GLOBAL_ALL());
 
@@ -72,15 +75,30 @@ while($still_running and $nrloop <100) {
     }
     #print STDERR "# nrloop=$nrloop still_running=$still_running, numfds=$numfds\n";
 }
+my %info = ();
 is($still_running, 0, 'http::curl_multi_perform(): return value ok: still_running=0');
 my $ri4 = http::curl_multi_info_read($r, my $nr_left);
-is_deeply($ri4, {result => 0, msg => 1}, 'http::curl_multi_info_read(): return value ok');
+$info{$ri4->{easy_handle}} = $ri4;
 is($nr_left, 1, 'http::curl_multi_info_read(): return value ok: nr_left=1');
 my $ri7 = http::curl_multi_info_read($r, $nr_left);
-is_deeply($ri7, {result => 0, msg => 1}, 'http::curl_multi_info_read(): return value ok');
+$info{$ri7->{easy_handle}} = $ri7;
 is($nr_left, 0, 'http::curl_multi_info_read(): return value ok: nr_left=0');
 my $handles_2 = http::curl_multi_get_handles($r);
 is_deeply($handles_2, [], 'http::curl_multi_get_handles(): return value ok: empty');
 my $e = http::curl_multi_cleanup($r);
 is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
 is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');
+is_deeply(\%info, {
+$s => {
+    msg => http::CURLMSG_DONE(),
+    easy_handle => $s,
+    result => http::CURLE_OK(),
+},
+$t => {
+    msg => http::CURLMSG_DONE(),
+    easy_handle => $t,
+    result => http::CURLE_OK(),
+}
+}, 'http::curl_multi_info_read(): return value ok');
+
+is_deeply(\@warn, [], 'no warnings');

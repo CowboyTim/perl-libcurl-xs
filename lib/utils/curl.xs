@@ -2093,9 +2093,16 @@ void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
         }
         if(!m)
             XSRETURN_UNDEF;
+        void *p = NULL;
+        int rp = curl_easy_getinfo(m->easy_handle, CURLINFO_PRIVATE, &p);
         HV *rh = (HV*)sv_2mortal((SV*)newHV());
-        hv_store(rh, "msg"   ,3,newSViv(m->msg)        ,0);
-        hv_store(rh, "result",6,newSViv(m->data.result),0);
+        hv_store(rh,"msg",3,newSViv(m->msg),0);
+        hv_store(rh,"result",6,newSViv(m->data.result),0);
+        if(p && rp == CURLE_OK && ((p_curl_easy *)p)->curle){
+            hv_store(rh,"easy_handle",11,newRV(((p_curl_easy *)p)->curle),0);
+        } else {
+            hv_store(rh,"easy_handle",11,&PL_sv_undef,0);
+        }
         XPUSHs(newRV((SV*)rh));
 
 void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)

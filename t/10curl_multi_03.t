@@ -1,4 +1,4 @@
-use Test::More tests => 18;
+use Test::More tests => 19;
 use strict; use warnings;
 
 use FindBin;
@@ -9,19 +9,24 @@ use_ok('utils::curl');
 my @warn;
 $SIG{__WARN__} = sub { push @warn, $_[0] };
 
+my $k = 0;
 my $s = http::curl_easy_init();
 isnt($s, undef, 'http::curl_easy_init(): return ok: s not undef: s='.sprintf("0x%x",$$s));
-http::curl_easy_setopt($s, http::CURLOPT_URL(), 'http://www.example.com');
-http::curl_easy_setopt($s, http::CURLOPT_NOBODY(), 1);
-http::curl_easy_setopt($s, http::CURLOPT_VERBOSE(), 0);
-http::curl_easy_setopt($s, http::CURLOPT_HEADER(), 0);
+$k |= http::curl_easy_setopt($s, http::CURLOPT_URL(), 'http://www.example.com');
+$k |= http::curl_easy_setopt($s, http::CURLOPT_NOBODY(), 1);
+$k |= http::curl_easy_setopt($s, http::CURLOPT_VERBOSE(), 0);
+$k |= http::curl_easy_setopt($s, http::CURLOPT_HEADER(), 0);
+$k |= http::curl_easy_setopt($s, http::CURLOPT_PRIVATE(), 's');
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok');
 
 my $t = http::curl_easy_init();
 isnt($t, undef, 'http::curl_easy_init(): return ok: s not undef: t='.sprintf("0x%s",$$t));
-http::curl_easy_setopt($t, http::CURLOPT_URL(), 'http://www.example.com');
-http::curl_easy_setopt($t, http::CURLOPT_NOBODY(), 1);
-http::curl_easy_setopt($t, http::CURLOPT_VERBOSE(), 0);
-http::curl_easy_setopt($t, http::CURLOPT_HEADER(), 0);
+$k |= http::curl_easy_setopt($t, http::CURLOPT_URL(), 'http://www.example.com');
+$k |= http::curl_easy_setopt($t, http::CURLOPT_NOBODY(), 1);
+$k |= http::curl_easy_setopt($t, http::CURLOPT_VERBOSE(), 0);
+$k |= http::curl_easy_setopt($t, http::CURLOPT_HEADER(), 0);
+$k |= http::curl_easy_setopt($t, http::CURLOPT_PRIVATE(), 't');
+is($k, http::CURLE_OK(), 'http::curl_easy_setopt(): return value ok');
 
 my $r = http::curl_multi_init();
 isnt($r, undef, 'http::curl_multi_init(): return ok: r not undef: r='.sprintf("0x%x",$$r));
@@ -59,18 +64,21 @@ while($still_running and $nrloop <100) {
     }
     #print STDERR "# nrloop=$nrloop still_running=$still_running, numfds=$numfds\n";
 }
+my %info;
 {
     my $ri5 = http::curl_multi_info_read($r, my $nr_left_bis);
-    is_deeply($ri5, {msg => 1, result => 0}, 'http::curl_multi_info_read(): return value ok: undef');
+    my $pv = http::curl_easy_getinfo($ri5->{easy_handle}, http::CURLINFO_PRIVATE());
+    $info{$pv} = $ri5;
     is($nr_left_bis, 1, 'http::curl_multi_info_read(): return value ok: nr_left=1');
 }
 {
     my $ri5 = http::curl_multi_info_read($r, my $nr_left_bis);
-    is_deeply($ri5, {msg => 1, result => 0}, 'http::curl_multi_info_read(): return value ok: undef');
+    my $pv = http::curl_easy_getinfo($ri5->{easy_handle}, http::CURLINFO_PRIVATE());
+    $info{$pv} = $ri5;
     is($nr_left_bis, 0, 'http::curl_multi_info_read(): return value ok: nr_left=0');
 }
 my $e = http::curl_multi_cleanup($r);
 is($e, http::CURLM_OK(), 'http::curl_multi_cleanup(): return value ok');
 is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');
-
+is_deeply([sort keys %info], ['s', 't'], 'http::curl_multi_info_read(): return value ok: handles added');
 is_deeply(\@warn, [], 'no warnings');
