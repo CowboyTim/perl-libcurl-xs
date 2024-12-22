@@ -41,7 +41,7 @@ $SIG{__WARN__} = sub { push @warn, $_[0] };
     is($k1, http::CURLM_OK(), 'http::curl_multi_add_handle(): return value ok: handle added');
 
     my $k2 = http::curl_multi_add_handle($r);
-    is($k2, undef, 'http::curl_multi_add_handle(): return value ok: undef');
+    is($k2, http::CURLM_BAD_EASY_HANDLE(), 'http::curl_multi_add_handle(): return value on error: no handle');
 
     my $k3 = http::curl_multi_add_handle($r, $s);
     is($k3, 7, 'http::curl_multi_add_handle(): return value on error/duplicate handle add');
@@ -56,7 +56,7 @@ $SIG{__WARN__} = sub { push @warn, $_[0] };
     is($to, 0, 'http::curl_multi_timeout(): return value ok: 0');
 
     my $l1 = http::curl_multi_remove_handle($r);
-    is($l1, undef, 'http::curl_multi_remove_handle(): return value ok: undef');
+    is($l1, http::CURLM_BAD_EASY_HANDLE(), 'http::curl_multi_remove_handle(): return value on error: no handle');
 
     my $l2 = http::curl_multi_remove_handle($r, $s);
     is($l2, http::CURLM_OK(), 'http::curl_multi_remove_handle(): return value ok');

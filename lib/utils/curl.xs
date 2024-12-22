@@ -1969,7 +1969,7 @@ void L_curl_multi_cleanup(SV *m_http=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         //printf("multi_cleanup: %p\n", (CURLM *)THIS(m_http));
         // go via DESTROY, as we have to destroy SV's too
 #if (LIBCURL_VERSION_NUM >= 0x080400)
@@ -2001,7 +2001,7 @@ void L_curl_multi_wakeup(SV *m_http=NULL)
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         int r = curl_multi_wakeup((CURLM *)THIS(m_http));
         XSRETURN_IV(r);
 #else
@@ -2016,7 +2016,7 @@ void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -2030,9 +2030,9 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         if(!THISSvOK(e_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_EASY_HANDLE);
         //printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
@@ -2045,9 +2045,9 @@ void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         if(!THISSvOK(e_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_EASY_HANDLE);
         void *p = NULL;
         int rp = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
@@ -2075,7 +2075,7 @@ void L_curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         int r = curl_multi_timeout((CURLM *)THIS(m_http), &l);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -2091,7 +2091,7 @@ void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         CURLMsg *m = curl_multi_info_read((CURLM *)THIS(m_http), &r);
         if(msgs_in_queue != NULL){
             sv_setiv(msgs_in_queue, r);
@@ -2117,7 +2117,7 @@ void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
 
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT){
             if(!looks_like_number(value))
@@ -2154,7 +2154,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         AV *re = (AV *)sv_2mortal((SV *)newAV());
         AV *we = (AV *)sv_2mortal((SV *)newAV());
         AV *ee = (AV *)sv_2mortal((SV *)newAV());
@@ -2191,7 +2191,7 @@ void L_curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0
         int r = 0;
         int nfds = 0;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         r = curl_multi_poll((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -2211,7 +2211,7 @@ void L_curl_multi_wait(SV *m_http=NULL, SV *extrafds=NULL, int timeout=0, SV *nu
         dTHX;
         dSP;
         if(!THISSvOK(m_http))
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         //printf("WAIT: %p, T: %d\n", (CURLM *)THIS(m_http), timeout);
         r = curl_multi_wait((CURLM *)THIS(m_http), NULL, 0, timeout, &nfds);
         if(r != CURLM_OK)
@@ -2231,7 +2231,7 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
         POPs;
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(!e)
-            XSRETURN_UNDEF;
+            XSRETURN_IV(CURLM_BAD_HANDLE);
         AV *av = (AV*)sv_2mortal((SV*)newAV());
         for(int i=0; e[i]; i++){
             void *p = NULL;
