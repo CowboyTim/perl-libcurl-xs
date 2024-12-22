@@ -2017,7 +2017,6 @@ void L_curl_multi_perform(SV *m_http=NULL, SV *running_handles=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("PERFORM: %p\n", (CURLM *)THIS(m_http));
         r = curl_multi_perform((CURLM *)THIS(m_http), &h);
         if(r != CURLM_OK)
             XSRETURN_IV(r);
@@ -2149,7 +2148,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         fd_set r;
         fd_set w;
         fd_set e;
-        int max = 0;
+        int max = -1;
         int rt = 0;
     PPCODE:
         dTHX;
@@ -2159,6 +2158,9 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         AV *re = (AV *)sv_2mortal((SV *)newAV());
         AV *we = (AV *)sv_2mortal((SV *)newAV());
         AV *ee = (AV *)sv_2mortal((SV *)newAV());
+        FD_ZERO(&r);
+        FD_ZERO(&w);
+        FD_ZERO(&e);
         rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
         if(rt != CURLM_OK){
             POPs;
@@ -2167,8 +2169,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
             XPUSHs(newRV_noinc((SV *)we));
             XPUSHs(newRV_noinc((SV *)ee));
         }
-        //printf("max: %d\n", max);
-        for(int i=0; i<max; i++){
+        for(int i=0; i<=max; i++){
             if(FD_ISSET(i, &r))
                 av_push(re, newSViv(i));
             if(FD_ISSET(i, &w))
