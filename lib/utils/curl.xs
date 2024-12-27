@@ -1945,7 +1945,7 @@ void L_curl_easy_recv(SV *e_http=NULL, SV *data=NULL, IV max_sz=0)
         SvCUR_set(buf, recv_sz);
         if(data){
             if(!SvOK(data)){
-                //printf("recv set: %d\n", (int)recv_sz);
+                //printf("recv append: %d\n", (int)recv_sz);
                 sv_setsv(data, buf);
             } else {
                 //printf("recv append: %d\n", (int)recv_sz);
@@ -2306,6 +2306,7 @@ void E_DESTROY(SV *e_http=NULL)
         // fetch ptr to private
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
         // cleanup
         curl_easy_cleanup((CURL *)THIS(e_http));
         // free ptr
@@ -2326,7 +2327,6 @@ void E_DESTROY(SV *e_http=NULL)
             }
             Safefree(p);
             p = NULL;
-            curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
         }
         //printf("after_destroy_easy: %p\n", (CURL *)THIS(e_http));
         XSRETURN_YES;
