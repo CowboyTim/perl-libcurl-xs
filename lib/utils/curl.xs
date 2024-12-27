@@ -74,9 +74,9 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
-    XPUSHs(sv_2mortal(newSViv((IV)type)));
-    XPUSHs(sv_2mortal(newSVpv(data, size)));
+    mXPUSHs(newRV_inc(pe->curle));
+    mXPUSHs(newSViv((IV)type));
+    mXPUSHs(newSVpv(data, size));
     if(cd && SvOK((SV *)cd))
         XPUSHs((SV *)cd);
     else
@@ -151,12 +151,12 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)purpose)));
-    XPUSHs(sv_2mortal(newSViv((IV)address->family)));
-    XPUSHs(sv_2mortal(newSViv((IV)address->socktype)));
-    XPUSHs(sv_2mortal(newSViv((IV)address->protocol)));
+    mXPUSHs(newSViv((IV)purpose));
+    mXPUSHs(newSViv((IV)address->family));
+    mXPUSHs(newSViv((IV)address->socktype));
+    mXPUSHs(newSViv((IV)address->protocol));
     // copy for now, but address->addr allows for updates from the callback per curl doc
-    XPUSHs(sv_2mortal(newSVpv((char *)&address->addr, address->addrlen)));
+    mXPUSHs(newSVpv((char *)&address->addr, address->addrlen));
     if(cd && SvOK(cd)){
         XPUSHs(cd);
     } else {
@@ -226,7 +226,7 @@ static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *u
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv(data, size*nmemb)));
+    mXPUSHs(newSVpv(data, size*nmemb));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -255,7 +255,7 @@ static int curl_hstsreadfunction_cb(char *buffer, size_t size, size_t nitems, vo
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv(buffer, size*nitems)));
+    mXPUSHs(newSVpv(buffer, size*nitems));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -280,7 +280,7 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv(buffer, size*nitems)));
+    mXPUSHs(newSVpv(buffer, size*nitems));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -305,8 +305,8 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *userp){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
-    XPUSHs(sv_2mortal(newSViv(cmd)));
+    mXPUSHs(newRV_inc(pe->curle));
+    mXPUSHs(newSViv(cmd));
     if(cd && SvOK((SV *)cd))
         XPUSHs((SV *)cd);
     else
@@ -335,10 +335,10 @@ static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv(conn_primary_ip, 0)));
-    XPUSHs(sv_2mortal(newSVpv(conn_local_ip, 0)));
-    XPUSHs(sv_2mortal(newSViv(conn_primary_port)));
-    XPUSHs(sv_2mortal(newSViv(conn_local_port)));
+    mXPUSHs(newSVpv(conn_primary_ip, 0));
+    mXPUSHs(newSVpv(conn_local_ip, 0));
+    mXPUSHs(newSViv(conn_primary_port));
+    mXPUSHs(newSViv(conn_local_port));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -367,10 +367,10 @@ static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, d
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVnv(dltotal)));
-    XPUSHs(sv_2mortal(newSVnv(dlnow)));
-    XPUSHs(sv_2mortal(newSVnv(ultotal)));
-    XPUSHs(sv_2mortal(newSVnv(ulnow)));
+    mXPUSHs(newSVnv(dltotal));
+    mXPUSHs(newSVnv(dlnow));
+    mXPUSHs(newSVnv(ultotal));
+    mXPUSHs(newSVnv(ulnow));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -399,8 +399,8 @@ static int curl_readfunction_cb(void *buffer, size_t size, size_t nitems, void *
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
-    XPUSHs(sv_2mortal(newSViv(size*nitems)));
+    mXPUSHs(newRV_inc(pe->curle));
+    mXPUSHs(newSViv(size*nitems));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -443,8 +443,8 @@ static int curl_writefunction_cb(void *buffer, size_t size, size_t nitems, void 
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
-    XPUSHs(sv_2mortal(newSVpv(buffer, size*nitems)));
+    mXPUSHs(newRV_inc(pe->curle));
+    mXPUSHs(newSVpv(buffer, size*nitems));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -473,7 +473,7 @@ static int curl_resolver_start_function_cb(void *resolver_state, void *reserved,
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv(PTR2IV(resolver_state))));
+    mXPUSHs(newSViv(PTR2IV(resolver_state)));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -502,8 +502,8 @@ static int curl_seekfunction_cb(void *userp, curl_off_t offset, int origin){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)offset)));
-    XPUSHs(sv_2mortal(newSViv((IV)origin)));
+    mXPUSHs(newSViv((IV)offset));
+    mXPUSHs(newSViv((IV)origin));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -546,7 +546,7 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
     SvSETMAGIC(fh);
     SETERRNO(0, 0);
     XPUSHs(fh);
-    XPUSHs(sv_2mortal(newSViv(PTR2IV(purpose))));
+    mXPUSHs(newSViv(PTR2IV(purpose)));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -579,8 +579,8 @@ static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(newRV(pe->curle));
-    XPUSHs(sv_2mortal(newSViv(PTR2IV(sslctx))));
+    mXPUSHs(newRV_inc(pe->curle));
+    mXPUSHs(newSViv(PTR2IV(sslctx)));
     if(cd && SvOK((SV *)cd))
         XPUSHs((SV *)cd);
     else
@@ -610,7 +610,7 @@ static int curl_trailerfunction_cb(char *data, size_t size, size_t nmemb, void *
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSVpv(data, size*nmemb)));
+    mXPUSHs(newSVpv(data, size*nmemb));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -635,10 +635,10 @@ static int curl_xferinfofunction_cb(void *userp, curl_off_t dltotal, curl_off_t 
     ENTER;
     SAVETMPS;
     PUSHMARK(SP);
-    XPUSHs(sv_2mortal(newSViv((IV)dltotal)));
-    XPUSHs(sv_2mortal(newSViv((IV)dlnow)));
-    XPUSHs(sv_2mortal(newSViv((IV)ultotal)));
-    XPUSHs(sv_2mortal(newSViv((IV)ulnow)));
+    mXPUSHs(newSViv((IV)dltotal));
+    mXPUSHs(newSViv((IV)dlnow));
+    mXPUSHs(newSViv((IV)ultotal));
+    mXPUSHs(newSViv((IV)ulnow));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -971,7 +971,7 @@ void L_curl_version_info(...)
         vi = curl_version_info(CURLVERSION_NOW);
         if(!vi)
             XSRETURN_UNDEF;
-        rh = (HV *)sv_2mortal((SV *)newHV());
+        rh = newHV();
         hv_store(rh, "version"        ,  7, newSVpv(vi->version, 0)          , 0);
         hv_store(rh, "version_num"    , 11, newSViv(vi->version_num)         , 0);
         hv_store(rh, "host"           ,  4, newSVpv(vi->host, 0)             , 0);
@@ -984,13 +984,13 @@ void L_curl_version_info(...)
             av_push(protocols, newSVpv(vi->protocols[i], 0));
         }
         hv_store(rh, "protocols"      ,  9, newRV_inc((SV *)protocols)       , 0);
-        XPUSHs(newRV_inc((SV *)rh));
+        mXPUSHs(newRV_inc((SV *)rh));
 
 void L_curl_version(...)
     PPCODE:
         dTHX;
         dSP;
-        XPUSHs(sv_2mortal(newSVpv(curl_version(), 0)));
+        mXPUSHs(newSVpv(curl_version(), 0));
 
 
 void L_curl_easy_init()
@@ -1016,6 +1016,7 @@ void L_curl_easy_init()
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
         ((p_curl_easy *)ptr)->curle = SvRV(sv); // no need to increase refcount
+        //printf("curl_easy_init: %p, %p, %p, %d\n", c, ptr, ((p_curl_easy *)ptr)->curle, SvREFCNT(SvRV(sv)));
         XPUSHs(sv);
 
 void L_curl_easy_cleanup(SV *e_http=NULL)
@@ -1098,7 +1099,7 @@ void L_curl_easy_strerror(int code)
         const char *s = curl_easy_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        XPUSHs(sv_2mortal(newSVpv(s, 0)));
+        mXPUSHs(newSVpv(s, 0));
 
 void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
@@ -1624,12 +1625,12 @@ void L_curl_easy_option_by_name(...)
         if(!opt){
             XSRETURN_UNDEF;
         }
-        HV *rh = (HV *)sv_2mortal((SV *)newHV());
+        HV *rh = newHV();
         hv_store(rh, "name"  , 4, newSVpv(opt->name, 0), 0);
         hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
-        XPUSHs(newRV_inc((SV *)rh));
+        mXPUSHs(newRV_inc((SV *)rh));
 #else
         croak("curl_easy_option_by_name is not supported in this version of libcurl");
 #endif
@@ -1645,12 +1646,12 @@ void L_curl_easy_option_by_id(...)
         const struct curl_easyoption *opt = curl_easy_option_by_id(SvIV(id));
         if(!opt)
             XSRETURN_UNDEF;
-        HV *rh = (HV *)sv_2mortal((SV *)newHV());
+        HV *rh = newHV();
         hv_store(rh, "name"  , 4, newSVpv(opt->name, 0), 0);
         hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
-        XPUSHs(newRV_inc((SV *)rh));
+        mXPUSHs(newRV_inc((SV *)rh));
 #else
         croak("curl_easy_option_by_id is not supported in this version of libcurl");
 #endif
@@ -1787,9 +1788,9 @@ void L_curl_easy_escape(...)
 #endif
         if(!s)
             XSRETURN_UNDEF;
-        SV *sv = sv_2mortal(newSVpv(s, 0));
+        SV *sv = newSVpv(s, 0);
         curl_free(s);
-        XPUSHs(sv);
+        mXPUSHs(sv);
 
 void L_curl_easy_unescape(...)
     PREINIT:
@@ -1814,9 +1815,9 @@ void L_curl_easy_unescape(...)
 #endif
         if(!s)
             XSRETURN_UNDEF;
-        SV *sv = sv_2mortal(newSVpv(s, 0));
+        SV *sv = newSVpv(s, 0);
         curl_free(s);
-        XPUSHs(sv);
+        mXPUSHs(sv);
 
 void L_curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
     PREINIT:
@@ -1925,7 +1926,7 @@ void L_curl_easy_send(SV *e_http=NULL, SV *data=&PL_sv_undef, )
             XSRETURN_IV(r);
         XSRETURN_IV(0);
 
-void L_curl_easy_recv(SV *e_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0)
+void L_curl_easy_recv(SV *e_http=NULL, SV *data=NULL, IV max_sz=0)
     PREINIT:
         int r = 0;
         size_t recv_sz = 0;
@@ -1936,17 +1937,22 @@ void L_curl_easy_recv(SV *e_http=NULL, SV *data=&PL_sv_undef, IV max_sz=0)
             XSRETURN_UNDEF;
         if(max_sz == 0)
             XSRETURN_IV(0);
-        SV *buf = (SV*)sv_2mortal(newSV(max_sz));
+        SV *buf = newSV(max_sz);
         SvPOK_only(buf);
         r = curl_easy_recv((CURL *)THIS(e_http), SvPVX(buf), max_sz, &recv_sz);
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         SvCUR_set(buf, recv_sz);
         if(data){
-            if(!SvOK(data))
+            if(!SvOK(data)){
+                //printf("recv set: %d\n", (int)recv_sz);
                 sv_setsv(data, buf);
-            else
+            } else {
+                //printf("recv append: %d\n", (int)recv_sz);
                 sv_catpvn(data, SvPVX(buf), recv_sz);
+                SAVEFREESV(buf);
+                buf = NULL;
+            }
         }
         XSRETURN_IV(0);
 
@@ -2033,11 +2039,12 @@ void L_curl_multi_add_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_IV(CURLM_BAD_HANDLE);
         if(!THISSvOK(e_http))
             XSRETURN_IV(CURLM_BAD_EASY_HANDLE);
-        //printf("ADD: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
+        //printf("ADD 1: %p, %p, %d\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http), SvREFCNT(SvRV(e_http)));
         int r = curl_multi_add_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
         SvREFCNT_inc(SvRV(e_http));
+        //printf("ADD 2: %p, %p, %d\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http), SvREFCNT(SvRV(e_http)));
         XSRETURN_IV(r);
 
 void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
@@ -2048,14 +2055,15 @@ void L_curl_multi_remove_handle(SV *m_http=NULL, SV *e_http=NULL)
             XSRETURN_IV(CURLM_BAD_HANDLE);
         if(!THISSvOK(e_http))
             XSRETURN_IV(CURLM_BAD_EASY_HANDLE);
+        //printf("REMOVE: %p, %p\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         void *p = NULL;
         int rp = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
         int r = curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)THIS(e_http));
         if(r != CURLM_OK)
             XSRETURN_IV(r);
-        if(rp == CURLE_OK && p && ((p_curl_easy *)p)->curle == SvRV(e_http)){
-            if(SvREFCNT(SvRV(e_http)) > 1)
-                SvREFCNT_dec(SvRV(e_http));
+        if(rp == CURLE_OK && p){
+            //printf("REMOVE: %p, %p, %p, %d, %p, %p, %d, %d\n", (CURLM *)THIS(m_http), (CURL *)THIS(e_http), p, rp, ((p_curl_easy *)p)->curle, SvRV(e_http), SvREFCNT(SvRV(e_http)), SvREFCNT(e_http));
+            SvREFCNT_dec(SvRV(e_http));
         }
         XSRETURN_IV(r);
 
@@ -2066,7 +2074,7 @@ void L_curl_multi_strerror(int code)
         const char *s = curl_multi_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        XPUSHs(sv_2mortal(newSVpv(s, 0)));
+        mXPUSHs(newSVpv(s, 0));
 
 void L_curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
     PREINIT:
@@ -2100,15 +2108,15 @@ void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
             XSRETURN_UNDEF;
         void *p = NULL;
         int rp = curl_easy_getinfo(m->easy_handle, CURLINFO_PRIVATE, &p);
-        HV *rh = (HV*)sv_2mortal((SV*)newHV());
+        HV *rh = newHV();
         hv_store(rh,"msg",3,newSViv(m->msg),0);
         hv_store(rh,"result",6,newSViv(m->data.result),0);
         if(p && rp == CURLE_OK && ((p_curl_easy *)p)->curle){
-            hv_store(rh,"easy_handle",11,newRV(((p_curl_easy *)p)->curle),0);
+            hv_store(rh,"easy_handle",11,newRV_inc(((p_curl_easy *)p)->curle),0);
         } else {
             hv_store(rh,"easy_handle",11,&PL_sv_undef,0);
         }
-        XPUSHs(newRV((SV*)rh));
+        mXPUSHs(newRV_inc((SV*)rh));
 
 void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
     PREINIT:
@@ -2155,19 +2163,20 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_IV(CURLM_BAD_HANDLE);
-        AV *re = (AV *)sv_2mortal((SV *)newAV());
-        AV *we = (AV *)sv_2mortal((SV *)newAV());
-        AV *ee = (AV *)sv_2mortal((SV *)newAV());
+        //printf("FDSET: %p\n", (CURLM *)THIS(m_http));
+        AV *re = newAV();
+        AV *we = newAV();
+        AV *ee = newAV();
         FD_ZERO(&r);
         FD_ZERO(&w);
         FD_ZERO(&e);
         rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
         if(rt != CURLM_OK){
             POPs;
-            XPUSHs(newSViv(rt));
-            XPUSHs(newRV_noinc((SV *)re));
-            XPUSHs(newRV_noinc((SV *)we));
-            XPUSHs(newRV_noinc((SV *)ee));
+            mXPUSHs(newSViv(rt));
+            mXPUSHs(newRV_noinc((SV *)re));
+            mXPUSHs(newRV_noinc((SV *)we));
+            mXPUSHs(newRV_noinc((SV *)ee));
         }
         for(int i=0; i<=max; i++){
             if(FD_ISSET(i, &r))
@@ -2178,10 +2187,10 @@ void L_curl_multi_fdset(SV *m_http=NULL)
                 av_push(ee, newSViv(i));
         }
         POPs;
-        XPUSHs(newSViv(rt));
-        XPUSHs(newRV_noinc((SV *)re));
-        XPUSHs(newRV_noinc((SV *)we));
-        XPUSHs(newRV_noinc((SV *)ee));
+        mXPUSHs(newSViv(rt));
+        mXPUSHs(newRV_noinc((SV *)re));
+        mXPUSHs(newRV_noinc((SV *)we));
+        mXPUSHs(newRV_noinc((SV *)ee));
 
 void L_curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=NULL)
     PPCODE:
@@ -2232,17 +2241,17 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(!e)
             XSRETURN_IV(CURLM_BAD_HANDLE);
-        AV *av = (AV*)sv_2mortal((SV*)newAV());
+        AV *av = newAV();
         for(int i=0; e[i]; i++){
             void *p = NULL;
             int r = curl_easy_getinfo(e[i], CURLINFO_PRIVATE, &p);
             if(r != CURLE_OK || !p || !((p_curl_easy *)p)->curle)
                 continue;
             SvREFCNT_inc(((p_curl_easy *)p)->curle);
-            av_push(av, newRV(((p_curl_easy *)p)->curle));
+            av_push(av, newRV_inc(((p_curl_easy *)p)->curle));
         }
         curl_free(e);
-        XPUSHs(newRV_noinc((SV *)av));
+        mXPUSHs(newRV_noinc((SV *)av));
 #else
         croak("curl_multi_get_handles is not supported in this version of libcurl");
 #endif
@@ -2439,7 +2448,7 @@ void U_curl_url_strerror(int code)
         const char *s = curl_url_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        XPUSHs(sv_2mortal(newSVpv(s, 0)));
+        mXPUSHs(newSVpv(s, 0));
 
 MODULE = utils::curl                PACKAGE = http::curl::url             PREFIX = U_
 
@@ -2469,12 +2478,12 @@ void W_curl_ws_meta(SV *ws_http=NULL)
         const struct curl_ws_frame *w = curl_ws_meta((CURL *)THIS(ws_http));
         if(!w)
             XSRETURN_UNDEF;
-        HV *rh = (HV*)sv_2mortal((SV*)newHV());
+        HV *rh = newHV();
         hv_store(rh, "age"      ,3,newSViv(w->age)       ,0);
         hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
         hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
         hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
-        XPUSHs(newRV((SV*)rh));
+        mXPUSHs(newRV_inc((SV*)rh));
 
 void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv_meta=NULL)
     PREINIT:
@@ -2493,10 +2502,13 @@ void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv
             XSRETURN_IV(r);
         SvCUR_set(buf, recv_sz);
         if(data){
-            if(!SvOK(data))
+            if(!SvOK(data)){
                 sv_setsv(data, buf);
-            else
+            } else {
                 sv_catsv_nomg(data, buf);
+                SvREFCNT_dec(buf);
+                buf = NULL;
+            }
         }
         if(hv_meta && w){
             HV *rh = (HV*)sv_2mortal((SV*)newHV());
@@ -2504,7 +2516,7 @@ void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv
             hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
             hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
             hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
-            sv_setsv(hv_meta, newRV((SV*)rh));
+            sv_setsv(hv_meta, newRV_inc((SV*)rh));
         }
         XSRETURN_IV(r);
 
