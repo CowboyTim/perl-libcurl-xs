@@ -2214,6 +2214,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
             mXPUSHs(newRV_noinc((SV *)re));
             mXPUSHs(newRV_noinc((SV *)we));
             mXPUSHs(newRV_noinc((SV *)ee));
+            XSRETURN(4);
         }
         for(int i=0; i<=max; i++){
             if(FD_ISSET(i, &r))
@@ -2227,6 +2228,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         mXPUSHs(newRV_noinc((SV *)re));
         mXPUSHs(newRV_noinc((SV *)we));
         mXPUSHs(newRV_noinc((SV *)ee));
+        XSRETURN(4);
 
 void L_curl_multi_poll(SV *m_http=NULL, SV *extrafds=&PL_sv_undef, int timeout=0, SV *numfds=NULL)
     PPCODE:
