@@ -1992,24 +1992,27 @@ void L_curl_multi_cleanup(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_IV(CURLM_BAD_HANDLE);
-        //printf("multi_cleanup: %p\n", (CURLM *)THIS(m_http));
+        CURLM *m = (CURLM *)THIS(m_http);
+        //printf("multi_cleanup: %p\n", m);
         // go via DESTROY, as we have to destroy SV's too
 #if (LIBCURL_VERSION_NUM >= 0x080400)
-        CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
+        CURL **e = curl_multi_get_handles(m);
         if(e){
+            //printf("multi_cleanup_multi_handles: %p, %p\n", m, e);
             for(int i=0; e[i]; i++){
-                curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)e[i]);
+                curl_multi_remove_handle(m, (CURL *)e[i]);
                 void *p = NULL;
                 int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
                 if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
                     SvREFCNT_dec(((p_curl_easy *)p)->curle);
                 }
             }
+            curl_free(e);
         }
 #endif
-        r = curl_multi_cleanup((CURLM *)THIS(m_http));
+        r = curl_multi_cleanup(m);
         if(r != CURLM_OK){
-            warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), (CURLM *)THIS(m_http));
+            warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), m);
             XSRETURN_IV(r);
         }
         SV *sv_m_http = SvRV(m_http);
@@ -2284,27 +2287,31 @@ void M_DESTROY(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        //printf("destroy_multi: %p\n", (CURLM *)THIS(m_http));
+        CURLM *m = (CURLM *)THIS(m_http);
+        //printf("destroy_multi: %p\n", m);
         // get all handles and remove them
 #if (LIBCURL_VERSION_NUM >= 0x080400)
-        CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
+        CURL **e = curl_multi_get_handles(m);
         if(e){
+            //printf("destroy_multi_handles: %p, %p\n", m, e);
             for(int i=0; e[i]; i++){
-                curl_multi_remove_handle((CURLM *)THIS(m_http), (CURL *)e[i]);
+                //printf("destroy_multi_remove_handle: %p, %p\n", m, e[i]);
+                curl_multi_remove_handle(m, (CURL *)e[i]);
                 void *p = NULL;
                 int r = curl_easy_getinfo((CURL *)e[i], CURLINFO_PRIVATE, &p);
                 if(r == CURLE_OK && p && ((p_curl_easy *)p)->curle){
                     SvREFCNT_dec(((p_curl_easy *)p)->curle);
                 }
             }
+            curl_free(e);
         }
 #endif
-        int r = curl_multi_cleanup((CURLM *)THIS(m_http));
+        int r = curl_multi_cleanup(m);
         if(r != CURLM_OK){
             warn("curl_multi_cleanup failed: %s, 0x%p", curl_multi_strerror(r), (CURLM *)THIS(m_http));
             XSRETURN_NO;
         }
-        //printf("after_destroy_curl_multi: %p\n", (CURLM *)THIS(m_http));
+        //printf("after_destroy_curl_multi: %p\n", m);
         XSRETURN_YES;
 
 MODULE = utils::curl                PACKAGE = http::curl::easy             PREFIX = E_
