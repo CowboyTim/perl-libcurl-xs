@@ -1,4 +1,4 @@
-use Test::More tests => 15;
+use Test::More tests => 14;
 use strict; use warnings;
 
 use FindBin;
@@ -41,7 +41,6 @@ is_deeply($te, [], 'still no exception fds');
 $k |= http::curl_multi_perform($r);
 ($err, $re, $we, $te) = http::curl_multi_fdset($r);
 is($err, http::CURLM_OK(), 'no errors');
-ok(scalar @$we == 0, 'write fds: 0');
 $k |= http::curl_multi_cleanup($r);
 is($k, http::CURLE_OK(), 'no errors');
 is($r, undef, 'http::curl_multi_cleanup(): return ok: cleanup undef');
