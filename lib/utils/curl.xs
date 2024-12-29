@@ -6,7 +6,6 @@
 #define PERLIO_NOT_STDIO 0    /* For co-existence with stdio only */
 #include <perlio.h>           /* Usually via #include <perl.h> */
 
-
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <curl/multi.h>
@@ -55,6 +54,7 @@ typedef struct {
     SV *curlu;
     SV *errbuffer;
     SV *fd_stderr_sv;
+    struct curl_slist *headers_slist;
 } p_curl_easy;
 
 static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, size_t size, void *userp){
@@ -903,16 +903,22 @@ INCLUDE: ../../curl_constants.xsh
 #define CURLOPTTYPE_BLOB 40000
 #endif
 
-void L_curl_global_init(int flags=CURL_GLOBAL_DEFAULT)
+void L_curl_global_init(...)
     PREINIT:
         int r;
     CODE:
         dTHX;
         dSP;
-        r = curl_global_init(flags);
-        if(r != 0)
-            XSRETURN_NO;
-        XSRETURN_YES;
+        if(items == 1){
+            if(SvOK(ST(0))){
+                r = curl_global_init(SvIV(ST(0)));
+            } else {
+                r = curl_global_init(CURL_GLOBAL_DEFAULT);
+            }
+        } else {
+            r = curl_global_init(CURL_GLOBAL_DEFAULT);
+        }
+        XSRETURN_IV(r);
 
 void L_curl_global_cleanup()
     CODE:
@@ -1030,6 +1036,7 @@ void L_curl_easy_cleanup(SV *e_http=NULL)
         // fetch ptr to private
         void *p = NULL;
         int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
+        curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
         // cleanup
         curl_easy_cleanup((CURL *)THIS(e_http));
         // free ptr
@@ -1061,22 +1068,21 @@ void L_curl_easy_cleanup(SV *e_http=NULL)
                 SvREFCNT_dec(((p_curl_easy *)p)->fd_stderr_sv);
                 ((p_curl_easy *)p)->fd_stderr_sv = NULL;
             }
+            if(((p_curl_easy *)p)->headers_slist){
+                //printf("destroy_easy_headers_slist: %p, %p\n", (CURL *)THIS(e_http), p);
+                curl_slist_free_all(((p_curl_easy *)p)->headers_slist);
+                ((p_curl_easy *)p)->headers_slist = NULL;
+            }
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
             for(int f=0; f<MAX_CB; f++){
                 p_curl_cb *cbe = &((p_curl_easy *)p)->cbs[f];
                 //printf("destroy_easy_cb: %d, %p, %p\n", f, cbe->cb, cbe->cd);
-                if(cbe->cb){
+                if(cbe->cb)
                     SvREFCNT_dec(cbe->cb);
-                    cbe->cb = NULL;
-                }
-                if(cbe->cd){
+                if(cbe->cd)
                     SvREFCNT_dec(cbe->cd);
-                    cbe->cd = NULL;
-                }
             }
             Safefree(p);
-            p = NULL;
-            curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
         }
         SV *sv_e_http = SvRV(e_http);
         sv_setref_pv(sv_e_http, NULL, NULL);
@@ -1112,6 +1118,7 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
 
+        //printf("curl_easy_setopt: %p %d %p %s\n", (CURL *)THIS(e_http), c_opt, value, (curl_easy_option_by_id(c_opt))->name);
         if(c_opt >= CURLOPTTYPE_LONG && c_opt < CURLOPTTYPE_OBJECTPOINT
             || c_opt == CURLOPTTYPE_VALUES){
             if(value && SvOK(value)){
@@ -1152,7 +1159,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     r = CURLE_OK;
                     f = 1;
                     break;
-                case CURLOPT_HTTPHEADER:
                 case CURLOPT_QUOTE:
                 case CURLOPT_POSTQUOTE:
                 case CURLOPT_TELNETOPTIONS:
@@ -1162,12 +1168,23 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_RESOLVE:
                 case CURLOPT_PROXYHEADER:
                 case CURLOPT_CONNECT_TO:
+                    XSRETURN_IV(CURLE_NOT_BUILT_IN);
+                    break;
+                case CURLOPT_HTTPHEADER:
                     av = (AV *)SvRV(dt);
                     for(int i=0; i<=av_len(av); i++){
                         SV **sv = av_fetch(av, i, 0);
                         if(sv && SvPOK(*sv)){
                             _vs = curl_slist_append(_vs, SvPV_nolen(*sv));
                         }
+                    }
+                    CURL *ce = (CURL *)THIS(e_http);
+                    t = curl_easy_getinfo(ce, CURLINFO_PRIVATE, &p);
+                    if(t == CURLE_OK && p){
+                        if(((p_curl_easy *)p)->headers_slist){
+                            curl_slist_free_all(((p_curl_easy *)p)->headers_slist);
+                        }
+                        ((p_curl_easy *)p)->headers_slist = _vs;
                     }
                     r = curl_easy_setopt((CURL *)THIS(e_http), c_opt, _vs);
                     f = 1;
@@ -1586,9 +1603,8 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             // first increase refcount, then decrease the old one, else we
             // might GC the object while we are just reusing the same var
             if(r == CURLE_OK){
-                if(cb){
+                if(cb)
                     SvREFCNT_inc(cb);
-                }
             }
             if(prev_sv){
                 SvREFCNT_dec(prev_sv);
@@ -2302,33 +2318,61 @@ void E_DESTROY(SV *e_http=NULL)
         dSP;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
-        //printf("destroy_easy: %p %p %p\n", (CURL *)THIS(e_http), e_http, SvRV(e_http));
+        CURL *c = (CURL *)THIS(e_http);
+        //printf("destroy_easy: %p %p %p\n", c, e_http, SvRV(e_http));
         // fetch ptr to private
         void *p = NULL;
-        int r = curl_easy_getinfo((CURL *)THIS(e_http), CURLINFO_PRIVATE, &p);
-        curl_easy_setopt((CURL *)THIS(e_http), CURLOPT_PRIVATE, NULL);
+        int r = curl_easy_getinfo(c, CURLINFO_PRIVATE, &p);
+        if(p)
+            curl_easy_setopt(c, CURLOPT_PRIVATE, NULL);
         // cleanup
-        curl_easy_cleanup((CURL *)THIS(e_http));
+        curl_easy_cleanup(c);
         // free ptr
         if(r == CURLE_OK && p){
-            //printf("destroy_easy_cbs: %p, %p\n", (CURL *)THIS(e_http), p);
+            //printf("destroy_easy_cbs: %p, %p, %d, %p, %p\n", c, p, SvREFCNT(SvRV(e_http)), SvRV(e_http), ((p_curl_easy *)p)->curle);
+            // clear possible CURLOPT_ERRORBUFFER
+            if(((p_curl_easy *)p)->errbuffer){
+                //printf("destroy_easy_errbuffer: %p, %p\n", c, p);
+                SvREFCNT_dec(((p_curl_easy *)p)->errbuffer);
+                ((p_curl_easy *)p)->errbuffer = NULL;
+            }
+            if(((p_curl_easy *)p)->postfields){
+                //printf("destroy_easy_postfields: %p, %p\n", c, p);
+                SvREFCNT_dec(((p_curl_easy *)p)->postfields);
+                ((p_curl_easy *)p)->postfields = NULL;
+            }
+            if(((p_curl_easy *)p)->private){
+                //printf("destroy_easy_private: %p, %p\n", c, p);
+                SvREFCNT_dec(((p_curl_easy *)p)->private);
+                ((p_curl_easy *)p)->private = NULL;
+            }
+            if(((p_curl_easy *)p)->curlu){
+                //printf("destroy_easy_curlu: %p, %p\n", c, p);
+                SvREFCNT_dec(((p_curl_easy *)p)->curlu);
+                ((p_curl_easy *)p)->curlu = NULL;
+            }
+            if(((p_curl_easy *)p)->fd_stderr_sv){
+                //printf("destroy_easy_fd_stderr_sv: %p, %p\n", c, p);
+                SvREFCNT_dec(((p_curl_easy *)p)->fd_stderr_sv);
+                ((p_curl_easy *)p)->fd_stderr_sv = NULL;
+            }
+            if(((p_curl_easy *)p)->headers_slist){
+                //printf("destroy_easy_headers_slist: %p, %p\n", (CURL *)THIS(e_http), p);
+                curl_slist_free_all(((p_curl_easy *)p)->headers_slist);
+                ((p_curl_easy *)p)->headers_slist = NULL;
+            }
             ((p_curl_easy *)p)->curle = NULL; // we're about to free ourself (DESTROY SV)
             for(int f=0; f<MAX_CB; f++){
                 p_curl_cb *cbe = &((p_curl_easy *)p)->cbs[f];
                 //printf("destroy_easy_cb: %d, %p, %p\n", f, cbe->cb, cbe->cd);
-                if(cbe->cb){
+                if(cbe->cb)
                     SvREFCNT_dec(cbe->cb);
-                    cbe->cb = NULL;
-                }
-                if(cbe->cd){
+                if(cbe->cd)
                     SvREFCNT_dec(cbe->cd);
-                    cbe->cd = NULL;
-                }
             }
             Safefree(p);
-            p = NULL;
         }
-        //printf("after_destroy_easy: %p\n", (CURL *)THIS(e_http));
+        //printf("after_destroy_easy: %p\n", c);
         XSRETURN_YES;
 
 MODULE = utils::curl                PACKAGE = http             PREFIX = R_
