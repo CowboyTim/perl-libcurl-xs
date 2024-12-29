@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 25;
 use strict; use warnings;
 
 use FindBin;
@@ -34,5 +34,19 @@ $SIG{__WARN__} = sub { push @warn, $_[0] };
     is($@, '', 'http::curl_easy_init() eval');
     isnt($r1, '', 'http::curl_version() return: '.$r1);
 }
+
+my @B;
+is(scalar(@B = http::curl_version_info()), 1, 'http::curl_version_info() return 1 array element');
+like($B[0]->{version}, qr/\d+\.\d+\.\d+/, 'http::curl_version_info() return version: '.$B[0]->{version});
+is(scalar(@B = http::curl_version_info(undef)), 1, 'http::curl_version_info() return 1 array element');
+like($B[0]->{version}, qr/\d+\.\d+\.\d+/, 'http::curl_version_info() return version: '.$B[0]->{version});
+is(scalar(@B = http::curl_version_info(undef, undef)), 1, 'http::curl_version_info() return 1 array element');
+like($B[0]->{version}, qr/\d+\.\d+\.\d+/, 'http::curl_version_info() return version: '.$B[0]->{version});
+is(scalar(@B = http::curl_version()), 1, 'http::curl_version() return 1 array element');
+like($B[0], qr/\d+\.\d+\.\d+/, 'http::curl_version() return version: '.$B[0]);
+is(scalar(@B = http::curl_version(undef)), 1, 'http::curl_version() return 1 array element');
+like($B[0], qr/\d+\.\d+\.\d+/, 'http::curl_version() return version: '.$B[0]);
+is(scalar(@B = http::curl_version(undef, undef)), 1, 'http::curl_version() return 1 array element');
+like($B[0], qr/\d+\.\d+\.\d+/, 'http::curl_version() return version: '.$B[0]);
 
 is_deeply(\@warn, [], 'no warnings');
