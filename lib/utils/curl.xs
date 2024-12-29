@@ -910,7 +910,7 @@ void L_curl_global_init(...)
         dTHX;
         dSP;
         if(items == 1){
-            if(SvOK(ST(0))){
+            if(SvOK(ST(0)) && looks_like_number(ST(0))){
                 r = curl_global_init(SvIV(ST(0)));
             } else {
                 r = curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -990,14 +990,17 @@ void L_curl_version_info(...)
             av_push(protocols, newSVpv(vi->protocols[i], 0));
         }
         hv_store(rh, "protocols"      ,  9, newRV_inc((SV *)protocols)       , 0);
-        mXPUSHs(newRV_inc((SV *)rh));
+        ST(0) = newRV_inc((SV *)rh);
+        sv_2mortal(ST(0));
+        XSRETURN(1);
 
 void L_curl_version(...)
     PPCODE:
         dTHX;
         dSP;
-        mXPUSHs(newSVpv(curl_version(), 0));
-
+        ST(0) = newSVpv(curl_version(), 0);
+        sv_2mortal(ST(0));
+        XSRETURN(1);
 
 void L_curl_easy_init()
     PPCODE:
@@ -1023,13 +1026,13 @@ void L_curl_easy_init()
         SvREADONLY_on(sv);
         ((p_curl_easy *)ptr)->curle = SvRV(sv); // no need to increase refcount
         //printf("curl_easy_init: %p, %p, %p, %d\n", c, ptr, ((p_curl_easy *)ptr)->curle, SvREFCNT(SvRV(sv)));
-        XPUSHs(sv);
+        ST(0) = sv;
+        XSRETURN(1);
 
 void L_curl_easy_cleanup(SV *e_http=NULL)
     PPCODE:
         dTHX;
         dSP;
-        POPs;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
         //printf("e: %p %p %p\n", (CURL *)THIS(e_http), e_http, SvRV(e_http));
@@ -1105,7 +1108,8 @@ void L_curl_easy_strerror(int code)
         const char *s = curl_easy_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        mXPUSHs(newSVpv(s, 0));
+        ST(0) = sv_2mortal(newSVpv(s, 0));
+        XSRETURN(1);
 
 void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
     PREINIT:
@@ -1634,6 +1638,8 @@ void L_curl_easy_option_by_name(...)
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
+        if(items != 1)
+            XSRETURN_UNDEF;
         SV *name = POPs;
         if(!name || !SvPOK(name))
             XSRETURN_UNDEF;
@@ -1646,7 +1652,8 @@ void L_curl_easy_option_by_name(...)
         hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
-        mXPUSHs(newRV_inc((SV *)rh));
+        ST(0) = sv_2mortal(newRV_inc((SV *)rh));
+        XSRETURN(1);
 #else
         croak("curl_easy_option_by_name is not supported in this version of libcurl");
 #endif
@@ -1656,6 +1663,8 @@ void L_curl_easy_option_by_id(...)
         dTHX;
 #if (LIBCURL_VERSION_NUM >= 0x073f00)
         dSP;
+        if(items != 1)
+            XSRETURN_UNDEF;
         SV *id = POPs;
         if(!id || !looks_like_number(id))
             XSRETURN_UNDEF;
@@ -1667,7 +1676,8 @@ void L_curl_easy_option_by_id(...)
         hv_store(rh, "type"  , 4, newSViv(opt->type)   , 0);
         hv_store(rh, "flags" , 5, newSViv(opt->flags)  , 0);
         hv_store(rh, "id"    , 2, newSViv(opt->id)     , 0);
-        mXPUSHs(newRV_inc((SV *)rh));
+        ST(0) = sv_2mortal(newRV_inc((SV *)rh));
+        XSRETURN(1);
 #else
         croak("curl_easy_option_by_id is not supported in this version of libcurl");
 #endif
@@ -1779,7 +1789,8 @@ void L_curl_easy_duphandle(SV *e_http=NULL)
         sv_setref_pv(sv, "http::curl::easy", (void *)c);
         SvREADONLY_on(sv);
         ((p_curl_easy *)ptr)->curle = SvRV(sv); // no need to increase refcount
-        XPUSHs(sv);
+        ST(0) = sv;
+        XSRETURN(1);
 
 void L_curl_easy_escape(...)
     PREINIT:
@@ -1806,7 +1817,8 @@ void L_curl_easy_escape(...)
             XSRETURN_UNDEF;
         SV *sv = newSVpv(s, 0);
         curl_free(s);
-        mXPUSHs(sv);
+        ST(0) = sv_2mortal(sv);
+        XSRETURN(1);
 
 void L_curl_easy_unescape(...)
     PREINIT:
@@ -1833,7 +1845,8 @@ void L_curl_easy_unescape(...)
             XSRETURN_UNDEF;
         SV *sv = newSVpv(s, 0);
         curl_free(s);
-        mXPUSHs(sv);
+        ST(0) = sv_2mortal(sv);
+        XSRETURN(1);
 
 void L_curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
     PREINIT:
@@ -1847,6 +1860,7 @@ void L_curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
         dSP;
         if(!THISSvOK(e_http))
             XSRETURN_UNDEF;
+        //printf("c_info: %d\n", c_info);
         if(c_info == 0)
             XSRETURN_UNDEF;
         if(c_info == CURLINFO_PRIVATE){
@@ -1856,7 +1870,8 @@ void L_curl_easy_getinfo(SV *e_http=NULL, int c_info=0)
                 XSRETURN_UNDEF;
             if(p){
                 SV *sv = (SV *)((p_curl_easy *)p)->private;
-                XPUSHs(sv);
+                ST(0) = sv;
+                XSRETURN(1);
             } else {
                 XSRETURN_UNDEF;
             }
@@ -1982,7 +1997,8 @@ void L_curl_multi_init()
         SV *sv = sv_newmortal();
         sv_setref_pv(sv, "http::curl::multi", (void *)m);
         SvREADONLY_on(sv);
-        XPUSHs(sv);
+        ST(0) = sv;
+        XSRETURN(1);
 
 void L_curl_multi_cleanup(SV *m_http=NULL)
     PREINIT:
@@ -2093,7 +2109,8 @@ void L_curl_multi_strerror(int code)
         const char *s = curl_multi_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        mXPUSHs(newSVpv(s, 0));
+        ST(0) = sv_2mortal(newSVpv(s, 0));
+        XSRETURN(1);
 
 void L_curl_multi_timeout(SV *m_http=NULL, SV *timeout = NULL)
     PREINIT:
@@ -2135,7 +2152,8 @@ void L_curl_multi_info_read(SV *m_http=NULL, SV *msgs_in_queue=NULL)
         } else {
             hv_store(rh,"easy_handle",11,&PL_sv_undef,0);
         }
-        mXPUSHs(newRV_inc((SV*)rh));
+        ST(0) = sv_2mortal(newRV_inc((SV*)rh));
+        XSRETURN(1);
 
 void L_curl_multi_setopt(SV *m_http=NULL, IV c_opt=0, SV *value=NULL)
     PREINIT:
@@ -2182,6 +2200,7 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_IV(CURLM_BAD_HANDLE);
+        POPs;
         //printf("FDSET: %p\n", (CURLM *)THIS(m_http));
         AV *re = newAV();
         AV *we = newAV();
@@ -2191,7 +2210,6 @@ void L_curl_multi_fdset(SV *m_http=NULL)
         FD_ZERO(&e);
         rt = curl_multi_fdset((CURLM *)THIS(m_http), &r, &w, &e, &max);
         if(rt != CURLM_OK){
-            POPs;
             mXPUSHs(newSViv(rt));
             mXPUSHs(newRV_noinc((SV *)re));
             mXPUSHs(newRV_noinc((SV *)we));
@@ -2205,7 +2223,6 @@ void L_curl_multi_fdset(SV *m_http=NULL)
             if(FD_ISSET(i, &e))
                 av_push(ee, newSViv(i));
         }
-        POPs;
         mXPUSHs(newSViv(rt));
         mXPUSHs(newRV_noinc((SV *)re));
         mXPUSHs(newRV_noinc((SV *)we));
@@ -2256,7 +2273,6 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
         dSP;
         if(!THISSvOK(m_http))
             XSRETURN_UNDEF;
-        POPs;
         CURL **e = curl_multi_get_handles((CURLM *)THIS(m_http));
         if(!e)
             XSRETURN_IV(CURLM_BAD_HANDLE);
@@ -2270,7 +2286,8 @@ void L_curl_multi_get_handles(SV *m_http=NULL)
             av_push(av, newRV_inc(((p_curl_easy *)p)->curle));
         }
         curl_free(e);
-        mXPUSHs(newRV_noinc((SV *)av));
+        ST(0) = sv_2mortal(newRV_noinc((SV *)av));
+        XSRETURN(1);
 #else
         croak("curl_multi_get_handles is not supported in this version of libcurl");
 #endif
@@ -2435,7 +2452,8 @@ void U_curl_url()
         SV *sv = sv_newmortal();
         sv_setref_pv(sv, "http::curl::url", (void *)u);
         SvREADONLY_on(sv);
-        XPUSHs(sv);
+        ST(0) = sv;
+        XSRETURN(1);
 
 void U_curl_url_cleanup(SV *u_http=NULL)
     PPCODE:
@@ -2461,7 +2479,8 @@ void U_curl_url_dup(SV *u_http=NULL)
         SV *sv = sv_newmortal();
         sv_setref_pv(sv, "http::curl::url", (void *)u);
         SvREADONLY_on(sv);
-        XPUSHs(sv);
+        ST(0) = sv;
+        XSRETURN(1);
 
 void U_curl_url_get(SV *u_http=NULL, int c_info=0, SV *value=NULL, int flags=0)
     PREINIT:
@@ -2499,7 +2518,8 @@ void U_curl_url_strerror(int code)
         const char *s = curl_url_strerror(code);
         if(!s)
             XSRETURN_UNDEF;
-        mXPUSHs(newSVpv(s, 0));
+        ST(0) = sv_2mortal(newSVpv(s, 0));
+        XSRETURN(1);
 
 MODULE = utils::curl                PACKAGE = http::curl::url             PREFIX = U_
 
@@ -2534,7 +2554,8 @@ void W_curl_ws_meta(SV *ws_http=NULL)
         hv_store(rh, "flags"    ,5,newSViv(w->flags)     ,0);
         hv_store(rh, "offset"   ,6,newSViv(w->offset)    ,0);
         hv_store(rh, "bytesleft",9,newSViv(w->bytesleft) ,0);
-        mXPUSHs(newRV_inc((SV*)rh));
+        ST(0) = sv_2mortal(newRV_inc((SV*)rh));
+        XSRETURN(1);
 
 void W_curl_ws_recv(SV *ws_http=NULL, SV *data=&PL_sv_undef, IV max_sz=1, SV *hv_meta=NULL)
     PREINIT:
