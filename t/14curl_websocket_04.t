@@ -6,8 +6,8 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl', qw());
 
-my $warn = 0;
-$SIG{__WARN__} = sub {$warn++};
+my @warn;
+$SIG{__WARN__} = sub {push @warn, $_[0]};
 
 my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
@@ -92,4 +92,4 @@ is($nr_err, 0, 'writefunction called with correct arguments');
 is($nr_of_calls, 2, 'writefunction called once');
 is($nr_read_err, 0, 'readfunction called with correct arguments');
 is($nr_reads, 1, 'readfunction called once');
-is($warn, 0, 'no warnings');
+is_deeply(\@warn, [], 'no warnings');
