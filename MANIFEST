@@ -41,8 +41,10 @@ t/14curl_websocket_03.t
 t/14curl_websocket_04.t
 t/15curl_setopt_curlu.t
 t/15curl_setopt_errorbuffer.t
+t/15curl_setopt_header.t
 t/15curl_setopt_postfields.t
 t/15curl_setopt_private.t
 t/15curl_setopt_readdata.t
 t/15curl_setopt_share.t
 t/15curl_setopt_ssh_keyfunction.t
+t/16curl_wantarray_tests.t
