@@ -83,6 +83,7 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
         XPUSHs(&PL_sv_undef);
     PUTBACK;
     call_sv(cb, G_DISCARD);
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return 0;
@@ -128,6 +129,7 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t curlfd){
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -169,12 +171,14 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     if(r == 1){
         res = POPs;
     } else {
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return CURL_SOCKET_BAD;
     }
     //printf("curl_opensocketfunction_cb 7 %p %d %d\n", res, SvOK(res), SvTYPE(res));
     if(!res || !SvOK(res)){
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return CURL_SOCKET_BAD;
@@ -182,6 +186,7 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     if(looks_like_number(res)){
         int fd = (int)SvIV(res);
         //printf("curl_opensocketfunction_cb 8 %d\n", (int)SvIV(res));
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return fd;
@@ -190,6 +195,7 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     //printf("curl_opensocketfunction_cb OK? %p %d %d\n", res, SvOK(rf), SvTYPE(rf));
     if(SvTYPE(rf) != SVt_PVGV){
         //printf("curl_opensocketfunction_cb GV %p %d %d\n", res, SvOK(rf), SvTYPE(rf));
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return CURL_SOCKET_BAD;
@@ -197,6 +203,7 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     GV *gv = (GV *)rf;
     if(!GvIO(gv)){
         //printf("curl_opensocketfunction_cb IO %p %d %d\n", res, SvOK(rf), SvTYPE(rf));
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return CURL_SOCKET_BAD;
@@ -204,10 +211,12 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
     int fd = PerlIO_fileno(IoIFP(GvIOn(gv)));
     //printf("curl_opensocketfunction_cb 4 %d\n", fd);
     if(fd < 0){
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return CURL_SOCKET_BAD;
     }
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return fd;
@@ -237,6 +246,7 @@ static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *u
     int res = 0;
     if(r >= 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -262,6 +272,7 @@ static int curl_hstsreadfunction_cb(char *buffer, size_t size, size_t nitems, vo
         XPUSHs(&PL_sv_undef);
     PUTBACK;
     call_sv(cb, G_DISCARD);
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return 0;
@@ -287,6 +298,7 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
         XPUSHs(&PL_sv_undef);
     PUTBACK;
     call_sv(cb, G_DISCARD);
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return 0;
@@ -317,6 +329,7 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *userp){
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -349,6 +362,7 @@ static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -381,6 +395,7 @@ static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, d
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -409,12 +424,14 @@ static int curl_readfunction_cb(void *buffer, size_t size, size_t nitems, void *
     int r = call_sv(cb, G_SCALAR);
     SPAGAIN;
     if(!r){
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return 0;
     }
     SV *sv = POPs;
     if(!SvPOK(sv)){
+        PUTBACK;
         FREETMPS;
         LEAVE;
         return 0;
@@ -425,6 +442,7 @@ static int curl_readfunction_cb(void *buffer, size_t size, size_t nitems, void *
             len = size*nitems;
         memcpy(buffer, SvPV_nolen(sv), len);
     }
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return len;
@@ -450,11 +468,17 @@ static int curl_writefunction_cb(void *buffer, size_t size, size_t nitems, void 
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r >= 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -484,6 +508,7 @@ static int curl_resolver_start_function_cb(void *resolver_state, void *reserved,
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -514,6 +539,7 @@ static int curl_seekfunction_cb(void *userp, curl_off_t offset, int origin){
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -557,6 +583,7 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
@@ -591,6 +618,7 @@ static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     //printf("curl_ssl_ctx_function_cb 3\n");
@@ -617,6 +645,7 @@ static int curl_trailerfunction_cb(char *data, size_t size, size_t nmemb, void *
         XPUSHs(&PL_sv_undef);
     PUTBACK;
     call_sv(cb, G_DISCARD);
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return 0;
@@ -649,6 +678,7 @@ static int curl_xferinfofunction_cb(void *userp, curl_off_t dltotal, curl_off_t 
     int res = 0;
     if(r == 1)
         res = POPi;
+    PUTBACK;
     FREETMPS;
     LEAVE;
     return res;
