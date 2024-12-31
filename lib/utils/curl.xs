@@ -82,7 +82,11 @@ static int curl_debugfunction_cb(CURL *handle, curl_infotype type, char *data, s
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    call_sv(cb, G_EVAL|G_DISCARD|G_KEEPERR);
+    SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp))
+        POPs;
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -124,11 +128,16 @@ static int curl_closesocketfunction_cb(void *userp, curl_socket_t curlfd){
         XPUSHs(&PL_sv_undef);
     PUTBACK;
     //printf("curl_closesocketfunction_cb 1\n");
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -165,8 +174,16 @@ static int curl_opensocketfunction_cb(void *userp, curlsocktype purpose, struct 
         XPUSHs(&PL_sv_undef);
     }
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+        PUTBACK;
+        FREETMPS;
+        LEAVE;
+        return CURL_SOCKET_BAD;
+    }
     SV *res = NULL;
     if(r == 1){
         res = POPs;
@@ -241,11 +258,16 @@ static int curl_headerfunction_cb(char *data, size_t size, size_t nmemb, void *u
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r >= 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -271,7 +293,11 @@ static int curl_hstsreadfunction_cb(char *buffer, size_t size, size_t nitems, vo
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    call_sv(cb, G_EVAL|G_DISCARD|G_KEEPERR);
+    SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp))
+        POPs;
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -297,7 +323,11 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    call_sv(cb, G_EVAL|G_DISCARD|G_KEEPERR);
+    SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp))
+        POPs;
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -324,11 +354,16 @@ static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *userp){
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -357,11 +392,16 @@ static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -390,11 +430,16 @@ static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, d
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -421,8 +466,16 @@ static int curl_readfunction_cb(void *buffer, size_t size, size_t nitems, void *
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+        PUTBACK;
+        FREETMPS;
+        LEAVE;
+        return 0;
+    }
     if(!r){
         PUTBACK;
         FREETMPS;
@@ -503,11 +556,16 @@ static int curl_resolver_start_function_cb(void *resolver_state, void *reserved,
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -534,11 +592,16 @@ static int curl_seekfunction_cb(void *userp, curl_off_t offset, int origin){
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -578,11 +641,16 @@ static int curl_sockoptfunction_cb(void *userp, curl_socket_t curlfd, curlsockty
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -613,11 +681,16 @@ static int curl_ssl_ctx_function_cb(CURL *handle, void *sslctx, void *userp){
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -644,7 +717,11 @@ static int curl_trailerfunction_cb(char *data, size_t size, size_t nmemb, void *
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    call_sv(cb, G_DISCARD);
+    call_sv(cb, G_EVAL|G_DISCARD|G_KEEPERR);
+    SPAGAIN;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp))
+        POPs;
     PUTBACK;
     FREETMPS;
     LEAVE;
@@ -673,11 +750,16 @@ static int curl_xferinfofunction_cb(void *userp, curl_off_t dltotal, curl_off_t 
     else
         XPUSHs(&PL_sv_undef);
     PUTBACK;
-    int r = call_sv(cb, G_SCALAR);
+    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
-    if(r == 1)
-        res = POPi;
+    SV *err_tmp = ERRSV;
+    if(SvTRUE(err_tmp)){
+        POPs;
+    } else {
+        if(r >= 1)
+            res = POPi;
+    }
     PUTBACK;
     FREETMPS;
     LEAVE;
