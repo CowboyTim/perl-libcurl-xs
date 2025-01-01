@@ -21,6 +21,7 @@ sub fn_write {
 my $LOGGED_ERRROR = "";
 sub fn_write_bis {
     my ($curl_e, $buffer, $output) = @_;
+    # local test
     local $@;
     eval {
         die "SOME DIE TEST 01\n" if $DO_DIE;
@@ -36,6 +37,7 @@ sub fn_write_bis {
 my $LOGGED_ERRROR_TRIS = "";
 sub fn_write_tris {
     my ($curl_e, $buffer, $output) = @_;
+    # no local test, $@ can't leak
     eval {
         die "SOME DIE TEST 01\n" if $DO_DIE;
     };
