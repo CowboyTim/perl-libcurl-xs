@@ -524,13 +524,11 @@ static int curl_writefunction_cb(void *buffer, size_t size, size_t nitems, void 
     int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
     SPAGAIN;
     int res = 0;
+    if(r >= 1)
+        res = POPi;
     SV *err_tmp = ERRSV;
-    if(SvTRUE(err_tmp)){
+    if(SvTRUE(err_tmp))
         POPs;
-    } else {
-        if(r >= 1)
-            res = POPi;
-    }
     PUTBACK;
     FREETMPS;
     LEAVE;
