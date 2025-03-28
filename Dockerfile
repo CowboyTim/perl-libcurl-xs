@@ -15,7 +15,7 @@ ENV TERM=
 RUN apt install -y dpkg gawk dialog
 
 FROM raspberry-pi-builder AS deb-pkg-build
-RUN apt install -y libssl-dev libsocket6-perl perl make gcc
+RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc
 ADD https://curl.se/download/curl-8.11.1.tar.gz /tmp/
 WORKDIR /tmp
 RUN tar xfz curl-*.tar.gz
