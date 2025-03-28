@@ -13,4 +13,5 @@ export LD_LIBRARY_PATH=$PKG_BASE/$CURL_PATH/lib/
 export PERL_MM_OPT="INSTALLDIRS=site INSTALL_BASE=$CURL_PATH/ INSTALLSITEARCH=$CURL_PATH/lib/perl"
 perl Makefile.PL
 make
+make test
 make install DESTDIR=$PKG_BASE
