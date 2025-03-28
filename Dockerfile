@@ -30,7 +30,7 @@ RUN apt install -y dpkg gawk dialog
 FROM builder AS deb-pkg-build
 RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc
 ADD https://curl.se/download/curl-8.11.1.tar.gz /tmp/
-COPY . /build
+COPY build_curl.sh /build/
 WORKDIR /tmp
 RUN tar xfz curl-*.tar.gz
 WORKDIR /
@@ -40,6 +40,7 @@ RUN cd /tmp/curl-* && sh /build/build_curl.sh "$PKG_BASE" "$CURL_PATH"
 RUN LD_LIBRARY_PATH=$PKG_BASE/$CURL_PATH/lib/ $PKG_BASE/$CURL_PATH/bin/curl --version
 WORKDIR /build
 ARG CACHEBUST=1
+COPY . /build/
 RUN sh /build/build_cpan.sh "$PKG_BASE" "$CURL_PATH"
 WORKDIR /
 RUN rm -rf \
