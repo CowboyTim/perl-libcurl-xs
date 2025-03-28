@@ -2,6 +2,9 @@ use ExtUtils::MakeMaker;
 
 use strict;
 
+print "LIBCURL_INC: $ENV{LIBCURL_INC}\n";
+print "LIBCURL_LIB: $ENV{LIBCURL_LIB}\n";
+
 $ENV{LIBCURL_INC} ||= do {
     my $inc_flags = `pkg-config libcurl --cflags-only-I`;
     chomp $inc_flags;

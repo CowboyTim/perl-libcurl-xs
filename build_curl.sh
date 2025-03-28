@@ -1,5 +1,12 @@
 #!/bin/bash
 
+set -e
+
+PKG_BASE=${1:-/pkgbase}
+shift
+CURL_PATH=${1:-/opt/curl}
+shift
+
 ./configure \
     --without-ca-embed \
     --without-libpsl \
@@ -39,4 +46,7 @@
     --without-librtmp \
     --without-apple-idn \
     --without-winidn \
-    --prefix=/var/tmp/crl
+    --disable-threaded-resolver \
+    --prefix=$CURL_PATH \
+    && make -j4 \
+    && make install DESTDIR=$PKG_BASE
