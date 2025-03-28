@@ -39,7 +39,7 @@ WriteMakefile(
     NAME                => 'utils::curl',
     VERSION_FROM        => 'lib/utils/curl.pm',
     LIBS                => ['-lcurl'],
-    CCFLAGS             => "$Config{ccflags} -Wextra -Werror",
+    CCFLAGS             => "$Config{ccflags} -Wextra -Werror -Wno-deprecated",
     LDDLFLAGS           => "$Config{lddlflags} -s -L$ENV{LIBCURL_LIB} -Wl,-rpath,$ENV{LIBCURL_LIB}",
     OPTIMIZE            => '-Os',
     MAN1PODS            => {},
