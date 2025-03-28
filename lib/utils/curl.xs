@@ -334,42 +334,6 @@ static int curl_hstswritefunction_cb(char *buffer, size_t size, size_t nitems, v
     return 0;
 }
 
-static int curl_ioctlfunction_cb(CURL *handle, int cmd, void *userp){
-    dTHX;
-    dSP;
-    if(!userp)
-        return 0;
-    p_curl_easy *pe = (p_curl_easy *)userp;
-    SV *cd = (SV *)(pe->cbs[CB_IOCTLFUNCTION].cd);
-    SV *cb = (SV *)(pe->cbs[CB_IOCTLFUNCTION].cb);
-    if(!cb || SvTYPE(cb) != SVt_PVCV)
-        return 0;
-    ENTER;
-    SAVETMPS;
-    PUSHMARK(SP);
-    mXPUSHs(newRV_inc(pe->curle));
-    mXPUSHs(newSViv(cmd));
-    if(cd && SvOK((SV *)cd))
-        XPUSHs((SV *)cd);
-    else
-        XPUSHs(&PL_sv_undef);
-    PUTBACK;
-    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
-    SPAGAIN;
-    int res = 0;
-    SV *err_tmp = ERRSV;
-    if(SvTRUE(err_tmp)){
-        POPs;
-    } else {
-        if(r >= 1)
-            res = POPi;
-    }
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-    return res;
-}
-
 static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn_local_ip, int conn_primary_port, int conn_local_port){
     dTHX;
     dSP;
@@ -387,44 +351,6 @@ static int curl_prereqfunction_cb(void *userp, char *conn_primary_ip, char *conn
     mXPUSHs(newSVpv(conn_local_ip, 0));
     mXPUSHs(newSViv(conn_primary_port));
     mXPUSHs(newSViv(conn_local_port));
-    if(cd && SvOK(cd))
-        XPUSHs(cd);
-    else
-        XPUSHs(&PL_sv_undef);
-    PUTBACK;
-    int r = call_sv(cb, G_EVAL|G_SCALAR|G_KEEPERR);
-    SPAGAIN;
-    int res = 0;
-    SV *err_tmp = ERRSV;
-    if(SvTRUE(err_tmp)){
-        POPs;
-    } else {
-        if(r >= 1)
-            res = POPi;
-    }
-    PUTBACK;
-    FREETMPS;
-    LEAVE;
-    return res;
-}
-
-static int curl_progressfunction_cb(void *userp, double dltotal, double dlnow, double ultotal, double ulnow){
-    dTHX;
-    dSP;
-    if(!userp)
-        return 0;
-    p_curl_easy *pe = (p_curl_easy *)userp;
-    SV *cd = (SV *)(pe->cbs[CB_PROGRESSFUNCTION].cd);
-    SV *cb = (SV *)(pe->cbs[CB_PROGRESSFUNCTION].cb);
-    if(!cb || SvTYPE(cb) != SVt_PVCV)
-        return 0;
-    ENTER;
-    SAVETMPS;
-    PUSHMARK(SP);
-    mXPUSHs(newSVnv(dltotal));
-    mXPUSHs(newSVnv(dlnow));
-    mXPUSHs(newSVnv(ultotal));
-    mXPUSHs(newSVnv(ulnow));
     if(cd && SvOK(cd))
         XPUSHs(cd);
     else
@@ -795,20 +721,10 @@ static const p_c_fn curl_cb_opts[] = {
         .d=CURLOPT_HSTSWRITEDATA,
         .fn = curl_hstswritefunction_cb
     },
-    [CB_IOCTLFUNCTION] = {
-        .f=CURLOPT_IOCTLFUNCTION,
-        .d=CURLOPT_IOCTLDATA,
-        .fn = curl_ioctlfunction_cb
-    },
     [CB_PREREQFUNCTION] = {
         .f=CURLOPT_PREREQFUNCTION,
         .d=CURLOPT_PREREQDATA,
         .fn = curl_prereqfunction_cb
-    },
-    [CB_PROGRESSFUNCTION] = {
-        .f=CURLOPT_PROGRESSFUNCTION,
-        .d=CURLOPT_PROGRESSDATA,
-        .fn = curl_progressfunction_cb
     },
     [CB_READFUNCTION] = {
         .f=CURLOPT_READFUNCTION,
@@ -1380,9 +1296,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_DEBUGDATA:
                     cb_indx = CB_DEBUGFUNCTION;
                     break;
-                case CURLOPT_IOCTLDATA:
-                    cb_indx = CB_IOCTLFUNCTION;
-                    break;
                 case CURLOPT_SSL_CTX_DATA:
                     cb_indx = CB_SSL_CTX_FUNCTION;
                     break;
@@ -1635,9 +1548,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 case CURLOPT_SSH_HOSTKEYFUNCTION:
                 case CURLOPT_CHUNK_BGN_FUNCTION:
                 case CURLOPT_CHUNK_END_FUNCTION:
-                case CURLOPT_CONV_FROM_UTF8_FUNCTION:
-                case CURLOPT_CONV_TO_NETWORK_FUNCTION:
-                case CURLOPT_CONV_FROM_NETWORK_FUNCTION:
                     XSRETURN_IV(CURLE_NOT_BUILT_IN);
                     break;
                 default:
@@ -1663,9 +1573,6 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                     break;
                 case CURLOPT_DEBUGFUNCTION:
                     cb_indx = CB_DEBUGFUNCTION;
-                    break;
-                case CURLOPT_IOCTLFUNCTION:
-                    cb_indx = CB_IOCTLFUNCTION;
                     break;
                 case CURLOPT_SSL_CTX_FUNCTION:
                     cb_indx = CB_SSL_CTX_FUNCTION;
