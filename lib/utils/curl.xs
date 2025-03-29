@@ -1544,8 +1544,10 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
             }
         } else if(c_opt >= CURLOPTTYPE_FUNCTIONPOINT && c_opt < CURLOPTTYPE_OFF_T){
             switch(c_opt){
+#if (LIBCURL_VERSION_NUM >= 0x078400)
                 case CURLOPT_SSH_KEYFUNCTION:
                 case CURLOPT_SSH_HOSTKEYFUNCTION:
+#endif
                 case CURLOPT_CHUNK_BGN_FUNCTION:
                 case CURLOPT_CHUNK_END_FUNCTION:
                     XSRETURN_IV(CURLE_NOT_BUILT_IN);
@@ -1567,10 +1569,12 @@ void L_curl_easy_setopt(SV *e_http=NULL, int c_opt=0, SV *value=&PL_sv_undef)
                 else
                     XSRETURN_IV(CURLE_BAD_FUNCTION_ARGUMENT);
             switch(c_opt){
+#if (LIBCURL_VERSION_NUM >= 0x078400)
                 case CURLOPT_SSH_KEYFUNCTION:
                 case CURLOPT_SSH_HOSTKEYFUNCTION:
                     XSRETURN_IV(CURLE_NOT_BUILT_IN);
                     break;
+#endif
                 case CURLOPT_DEBUGFUNCTION:
                     cb_indx = CB_DEBUGFUNCTION;
                     break;
@@ -2554,6 +2558,8 @@ void U_DESTROY(SV *u_http=NULL)
         curl_url_cleanup((CURLU *)THIS(u_http));
         XSRETURN_YES;
 
+#if (LIBCURL_VERSION_NUM >= 0x081100)
+
 MODULE = utils::curl                PACKAGE = http             PREFIX = W_
 
 VERSIONCHECK: DISABLE
@@ -2626,3 +2632,5 @@ void W_curl_ws_send(SV *ws_http=NULL, SV *data=&PL_sv_undef, int ws_code=CURLWS_
         if(r != CURLE_OK)
             XSRETURN_IV(r);
         XSRETURN_IV(0);
+
+#endif
