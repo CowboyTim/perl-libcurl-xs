@@ -30,10 +30,12 @@ $ENV{LIBCURL_LIB} ||= do {
     }
     $lib_flags;
 };
+$ENV{LIBCURL_RPATH} ||= $ENV{LIBCURL_LIB};
 
 {
     local @ARGV = ();
-    do './curl_constants.PL' or die $@, $?;
+    do './curl_constants.PL'
+        or die "problem running curl_constants.PL: exit:$?, $@\n";
 }
 
 use Config;
@@ -42,8 +44,8 @@ WriteMakefile(
     NAME                => 'utils::curl',
     VERSION_FROM        => 'lib/utils/curl.pm',
     LIBS                => ['-lcurl'],
-    CCFLAGS             => "$Config{ccflags} -Wextra -Werror -Wno-deprecated",
-    LDDLFLAGS           => "$Config{lddlflags} -s -L$ENV{LIBCURL_LIB} -Wl,-rpath,$ENV{LIBCURL_LIB}",
+    CCFLAGS             => "$Config{ccflags} -Wextra -Werror -fPIC -rdynamic",
+    LDDLFLAGS           => "-shared -Wl,--disable-new-dtags -L$ENV{LIBCURL_LIB} -Wl,-R$ENV{LIBCURL_RPATH} -Wl,-rpath=$ENV{LIBCURL_RPATH}",
     OPTIMIZE            => '-Os',
     MAN1PODS            => {},
     MAN3PODS            => {},
@@ -54,6 +56,7 @@ WriteMakefile(
     NO_MYMETA           => 1,
     NO_PERLLOCAL        => 1,
     NO_PACKLIST         => 1,
+    NEEDS_LINKING       => 1,
     XSMULTI             => 1,
     BUILD_REQUIRES      => {"ExtUtils::MakeMaker" => '7.12'},
     XS                  => {

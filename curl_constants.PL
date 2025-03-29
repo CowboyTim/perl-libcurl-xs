@@ -14,6 +14,10 @@ my $inc_flags = $ENV{LIBCURL_INC} ||= do {
 my $str = '';
 for my $f (qw(curl/curl.h curl/multi.h curl/easy.h curl/urlapi.h curl/websockets.h)) {
     my $curl_h = "$inc_flags/$f";
+    if(!-e $curl_h){
+        print STDERR "not using $f, not there\n";
+        next;
+    }
     open(my $fh, "<", $curl_h) or die "Can't open $curl_h: $!\n";
     print STDERR "reading in $curl_h\n";
     {
