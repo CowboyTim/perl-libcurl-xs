@@ -46,9 +46,9 @@ use Config;
 WriteMakefile(
     NAME                => 'utils::curl',
     VERSION_FROM        => 'lib/utils/curl.pm',
-    LIBS                => ['-lcurl'],
+    LIBS                => ["-L$ENV{LIBCURL_LIB} -lcurl"],
     CCFLAGS             => "$Config{ccflags} -Wextra -Werror -fPIC -rdynamic",
-    LDDLFLAGS           => "-shared -Wl,--disable-new-dtags -L$ENV{LIBCURL_LIB} -Wl,-R$ENV{LIBCURL_RPATH} -Wl,-rpath=$ENV{LIBCURL_RPATH}",
+    LDDLFLAGS           => "-shared -Wl,--disable-new-dtags -L$ENV{LIBCURL_LIB} -Wl,-R$ENV{LIBCURL_RPATH} -Wl,-rpath=$ENV{LIBCURL_RPATH} -lcurl",
     OPTIMIZE            => '-Os',
     MAN1PODS            => {},
     MAN3PODS            => {},
