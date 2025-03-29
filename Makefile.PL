@@ -4,8 +4,10 @@ use strict;
 
 print "LIBCURL_INC: $ENV{LIBCURL_INC}\n";
 print "LIBCURL_LIB: $ENV{LIBCURL_LIB}\n";
+print "LIBCURL_RPATH: $ENV{LIBCURL_RPATH}\n";
 
 $ENV{LIBCURL_INC} ||= do {
+    print "LIBCURL_INC not set, trying to set it by running pkg-config\n";
     my $inc_flags = `pkg-config libcurl --cflags-only-I`;
     chomp $inc_flags;
     if(!$inc_flags){
@@ -16,6 +18,7 @@ $ENV{LIBCURL_INC} ||= do {
 };
 
 $ENV{LIBCURL_LIB} ||= do {
+    print "LIBCURL_LIB not set, trying to set it by running pkg-config\n";
     my $lib_flags;
     if($ENV{LIBCURL_INC}){
         $lib_flags = $ENV{LIBCURL_INC};
