@@ -1,4 +1,4 @@
-use Test::More tests => 13;
+use Test::More tests => 14;
 use strict; use warnings;
 
 use FindBin;
@@ -82,14 +82,17 @@ if($ssl_ctx_ok){
         return http::CURLE_OK();
     };
     $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'http://www.example.com/');
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK URL');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_SSL_CTX_FUNCTION(), \&code_sub);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK SSL_CTX_FUNCTION');
+    $k |= http::curl_easy_setopt($e, http::CURLOPT_CAPATH(), '/etc/ssl/certs/');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK CAPATH');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK NOBODY');
     $check_var_string = "$e";
     $k |= http::curl_easy_perform($e);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK perform')
+        or diag("http::curl_easy_perform() returned: $k: ".http::curl_easy_strerror($k));
     is($::k_cnt, 0, 'callback function called: ok successes:'.$::k_cnt);
     $k |= http::curl_easy_setopt($e, http::CURLOPT_URL(), 'https://www.example.com/');
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
