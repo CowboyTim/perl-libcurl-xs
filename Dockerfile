@@ -41,6 +41,7 @@ RUN LD_LIBRARY_PATH=$PKG_BASE/$CURL_PATH/lib/ $PKG_BASE/$CURL_PATH/bin/curl --ve
 WORKDIR /build
 ARG CACHEBUST=1
 COPY . /build/
+RUN apt install -y ca-certificates
 RUN sh /build/build_cpan.sh "$PKG_BASE" "$CURL_PATH"
 WORKDIR /
 RUN rm -rf \
@@ -52,7 +53,6 @@ RUN rm -rf \
         $PKG_BASE/$CURL_PATH/lib/pkgconfig \
         $PKG_BASE/$CURL_PATH/lib/*.a
 RUN PERL5LIB=$PKG_BASE/$CURL_PATH/lib/perl \
-    LD_LIBRARY_PATH=$PKG_BASE/$CURL_PATH/lib/ \
         perl -MData::Dumper \
              -Mutils::curl \
              -we \
