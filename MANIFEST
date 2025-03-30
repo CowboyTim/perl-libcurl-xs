@@ -28,7 +28,7 @@ t/12curl_easy_callback_04.t
 t/12curl_easy_callback_05.t
 t/12curl_easy_callback_06.t
 t/12curl_easy_callback_07.t
-t/12curl_easy_callback_ioctl.t
+t/12curl_easy_callback_progress.t
 t/12curl_easy_callback_openclosesocket.t
 t/12curl_easy_callback_prereq.t
 t/12curl_easy_callback_setopt_01.t
