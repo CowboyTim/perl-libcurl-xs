@@ -28,7 +28,7 @@ ENV TERM=
 RUN apt install -y dpkg gawk dialog
 
 FROM builder AS deb-pkg-build
-RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc
+RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc ca-certificates
 ADD https://curl.se/download/curl-8.11.1.tar.gz /tmp/
 COPY build_curl.sh /build/
 WORKDIR /tmp
@@ -39,9 +39,7 @@ ENV PKG_BASE=/pkgbase
 RUN cd /tmp/curl-* && sh /build/build_curl.sh "$PKG_BASE" "$CURL_PATH"
 RUN LD_LIBRARY_PATH=$PKG_BASE/$CURL_PATH/lib/ $PKG_BASE/$CURL_PATH/bin/curl --version
 WORKDIR /build
-ARG CACHEBUST=1
 COPY . /build/
-RUN apt install -y ca-certificates
 RUN sh /build/build_cpan.sh "$PKG_BASE" "$CURL_PATH"
 WORKDIR /
 RUN rm -rf \
@@ -52,7 +50,11 @@ RUN rm -rf \
         $PKG_BASE/$CURL_PATH/lib/*.la \
         $PKG_BASE/$CURL_PATH/lib/pkgconfig \
         $PKG_BASE/$CURL_PATH/lib/*.a
-RUN PERL5LIB=$PKG_BASE/$CURL_PATH/lib/perl \
+RUN find $PKG_BASE/$CURL_PATH -type f -name '*.so*' -exec strip --strip-unneeded {} \;
+RUN mkdir -p /pkg && mv $PKG_BASE/* /pkg/
+RUN find /pkg; \
+    LD_LIBRARY_PATH=/pkg/opt/lib \
+    PERL5LIB=/pkg/opt/lib/perl \
         perl -MData::Dumper \
              -Mutils::curl \
              -we \
