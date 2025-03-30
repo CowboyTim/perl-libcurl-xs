@@ -6,8 +6,8 @@ use lib "$FindBin::Bin/../lib", "$FindBin::Bin/../blib/arch", "$FindBin::Bin/../
 
 use_ok('utils::curl', qw());
 
-my $warn = 0;
-$SIG{__WARN__} = sub {$warn++};
+my @warns;
+$SIG{__WARN__} = sub {push @warns, $_[0]};
 
 my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
@@ -28,12 +28,15 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_HTTPHEADER(), [
 my $nr_of_calls = 0;
 my $nr_err = 0;
 my $ws_frame;
+my $do_ws = (http::curl_version() =~ s/.*libcurl\/(\d+)\.(\d+)\.\d+.*//gr and $1>=7 and $2>=78)?1:0;
 $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
     my ($c_e, $buf, $userp) = @_;
     $nr_err++ unless "$c_e" eq "$r" and !defined $userp;
     $nr_of_calls++;
-    my $ws_f = http::curl_ws_meta($c_e);
-    $ws_frame ||= $ws_f if $ws_f;
+    if($do_ws){
+        my $ws_f = http::curl_ws_meta($c_e);
+        $ws_frame ||= $ws_f if $ws_f;
+    }
     if($buf =~ /^HTTP\/1.1 101 Switching Protocols/){
         print "SWITCHING PROTOCOLS\n";
         $k |= http::curl_easy_setopt($r, http::CURLOPT_URL(), 'wss://echo.websocket.org');
@@ -83,7 +86,7 @@ is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
 
 http::curl_easy_cleanup($r);
 is($nr_err, 0, 'writefunction called with correct arguments');
-is($nr_of_calls, 2, 'writefunction called once');
+is($nr_of_calls, 1, 'writefunction called once');
 is($nr_read_err, 0, 'readfunction called with correct arguments');
 is($nr_reads, 1, 'readfunction called once');
-is($warn, 0, 'no warnings');
+is_deeply(\@warns, [], 'no warnings');

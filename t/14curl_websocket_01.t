@@ -9,6 +9,11 @@ use_ok('utils::curl', qw());
 my $warn = 0;
 $SIG{__WARN__} = sub {$warn++};
 
+my $do_ws = (http::curl_version() =~ s/.*libcurl\/(\d+)\.(\d+)\.\d+.*//gr and $1>=7 and $2>=78)?1:0;
+SKIP: {
+skip "libcurl < 7.86.0 does not support websocket meta data", 15
+    unless $do_ws;
+
 my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
 my $r = http::curl_easy_init();
@@ -46,7 +51,7 @@ $k |= http::curl_easy_setopt($r, http::CURLOPT_WRITEFUNCTION(), sub {
     my ($c_e, $buf, $userp) = @_;
     $nr_err++ unless "$c_e" eq "$r" and defined $userp;
     $nr_of_calls++;
-    my $ws_f = http::curl_ws_meta($r);
+    my $ws_f = http::curl_ws_meta($c_e);
     $ws_frame ||= $ws_f if $ws_f;
     return length($buf);
 });
@@ -56,6 +61,7 @@ is($nr_of_calls, 0, 'writefunction not called yet');
 is($k, http::CURLE_OK(), 'curl_easy_setopt');
 $k |= http::curl_easy_perform($r);
 is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
+
 
 {
     $k |= http::curl_ws_recv($r, my $recv_data, 100, my $ws_frame);
@@ -79,5 +85,6 @@ is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
 is_deeply($ws_frame, undef, 'ws_frame OK: not set as writefunction not called');
 is($nr_err, 0, 'writefunction called with correct arguments');
 is($nr_of_calls, 0, 'writefunction not called yet');
-is($warn, 0, 'no warnings');
 http::curl_easy_cleanup($r);
+}
+is($warn, 0, 'no warnings');

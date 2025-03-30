@@ -9,6 +9,11 @@ use_ok('utils::curl', qw());
 my @warn;
 $SIG{__WARN__} = sub {push @warn, $_[0]};
 
+my $do_ws = (http::curl_version() =~ s/.*libcurl\/(\d+)\.(\d+)\.\d+.*//gr and $1>=7 and $2>=78)?1:0;
+SKIP: {
+skip "libcurl < 7.86.0 does not support websocket meta data", 7
+    unless $do_ws;
+
 my $ws_key = `openssl rand -base64 32`;
 chomp $ws_key;
 my $r = http::curl_easy_init();
@@ -92,4 +97,5 @@ is($nr_err, 0, 'writefunction called with correct arguments');
 is($nr_of_calls, 2, 'writefunction called once');
 is($nr_read_err, 0, 'readfunction called with correct arguments');
 is($nr_reads, 1, 'readfunction called once');
+}
 is_deeply(\@warn, [], 'no warnings');
