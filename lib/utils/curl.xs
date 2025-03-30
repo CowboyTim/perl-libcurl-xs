@@ -2558,7 +2558,7 @@ void U_DESTROY(SV *u_http=NULL)
         curl_url_cleanup((CURLU *)THIS(u_http));
         XSRETURN_YES;
 
-#if (LIBCURL_VERSION_NUM >= 0x081100)
+#if (LIBCURL_VERSION_NUM >= 0x075600)
 
 MODULE = utils::curl                PACKAGE = http             PREFIX = W_
 
