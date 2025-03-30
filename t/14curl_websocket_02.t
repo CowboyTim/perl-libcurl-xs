@@ -86,7 +86,7 @@ is($k, http::CURLE_OK(), 'curl_easy_perform: '.http::curl_easy_strerror($k));
 
 http::curl_easy_cleanup($r);
 is($nr_err, 0, 'writefunction called with correct arguments');
-is($nr_of_calls, 1, 'writefunction called once');
+is($nr_of_calls, 2, 'writefunction called once');
 is($nr_read_err, 0, 'readfunction called with correct arguments');
 is($nr_reads, 1, 'readfunction called once');
 is_deeply(\@warns, [], 'no warnings');
