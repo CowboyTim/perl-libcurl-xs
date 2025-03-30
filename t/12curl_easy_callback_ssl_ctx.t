@@ -98,12 +98,14 @@ if($ssl_ctx_ok){
     $k |= http::curl_easy_perform($e);
     http::curl_easy_cleanup($e);
     undef $e;
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, on DUP, after https');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, on DUP, after https')
+        or diag("http::curl_easy_perform() returned: $k: ".http::curl_easy_strerror($k));
     is($::k_cnt, 1, 'callback function called: ok successes:'.$::k_cnt);
     print "# doing perform on DUP handle\n";
     $check_var_string = "$d";
     $k |= http::curl_easy_perform($d);
-    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, on DUP, after https');
+    is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK, on DUP, after https')
+        or diag("http::curl_easy_perform() returned: $k: ".http::curl_easy_strerror($k));
     http::curl_easy_cleanup($d);
     is($::k_cnt, 2, 'callback function called: ok successes, 2x:'.$::k_cnt);
     is($::e_cnt, 0, 'callback function called: no errors logged:'.$::e_cnt);

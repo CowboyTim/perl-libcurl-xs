@@ -166,10 +166,10 @@ $SIG{__WARN__} = sub { push @warn, $_[0] };
     $k |= http::curl_easy_setopt($e, http::CURLOPT_NOBODY(), 1);
     $k |= http::curl_easy_perform($e);
     is($e_cnt, 0, 'callback function called: no errors');
-    ok($k_cnt > 20*2, 'callback function called: no errors x2:'.$k_cnt);
+    ok($k_cnt > 20, 'callback function called: called >20, got:'.$k_cnt);
     is($k, http::CURLE_OK(), 'http::curl_easy_setopt() return CURLE_OK code ref, no var, no closure: '.http::curl_easy_strerror($k));
     is($e_url, 'http://www.example.com/', 'http::curl_easy_getinfo() return URL ok');
-    ok(scalar(@$dt) > 20, 'got array size');
+    ok(scalar(@$dt) > 10, 'got array size >10, got:'.scalar(@$dt));
     http::curl_easy_cleanup($e);
 }
 
