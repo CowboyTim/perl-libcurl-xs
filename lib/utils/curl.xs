@@ -2046,6 +2046,8 @@ void L_curl_multi_cleanup(SV *m_http=NULL)
             }
             curl_free(e);
         }
+#else
+        croak("curl_multi_cleanup is not supported in this version of libcurl");
 #endif
         r = curl_multi_cleanup(m);
         if(r != CURLM_OK){
@@ -2345,6 +2347,8 @@ void M_DESTROY(SV *m_http=NULL)
             }
             curl_free(e);
         }
+#else
+        croak("DESTROY: curl_multi_get_handles is not supported in this version of libcurl");
 #endif
         int r = curl_multi_cleanup(m);
         if(r != CURLM_OK){
