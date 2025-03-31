@@ -1,11 +1,26 @@
 ARG ARCH
 FROM --platform=${ARCH} debian:bookworm-slim AS builder-base
+COPY rpi_zero_w_bookworm.tar.gz /rpi_zero_w_bookworm.tar.gz 
+WORKDIR /
+RUN if [ "${ARCH}" = "linux/armhf" ]; then \
+        mkdir -p /stage; \
+        tar xzf /rpi_zero_w_bookworm.tar.gz; \
+        rm /rpi_zero_w_bookworm.tar.gz; \
+        echo "GMT" > /stage/etc/timezone; \
+        ln -sfT /usr/share/zoneinfo/right/GMT /stage/etc/localtime; \
+        exit 0; \
+    fi
+RUN if [ "${ARCH}" != "linux/armhf" ]; then \
+       ln -s / /stage; \
+    fi
+RUN apt update
 
-FROM scratch AS builder
-COPY --from=builder-base / /
-RUN apt update && apt install -y dpkg gawk dialog
+FROM --platform=${ARCH} scratch AS builder
+ENV TERM=
+COPY --from=builder-base /stage /
 
-FROM builder AS deb-pkg-build
+FROM --platform=${ARCH} builder AS deb-pkg-build
+RUN apt install -y dpkg gawk dialog
 RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc ca-certificates
 ADD https://curl.se/download/curl-8.11.1.tar.gz /tmp/
 COPY build_curl.sh /build/
@@ -44,10 +59,9 @@ RUN \
 RUN LD_LIBRARY_PATH=$PKG_DIST/opt/lib PERL5LIB=$PKG_DIST/opt/lib/perl perl -Mutils::curl -e 'print $utils::curl::VERSION' > $PKG_DIST/VERSION && cat $PKG_DIST/VERSION
 COPY package_deb.sh /build
 ARG ARCH
-ENV platform_arch=${ARCH}
 ENV AUTHOR="m@local"
 WORKDIR /pkg
-RUN PKG_VERSION=$(cat $PKG_DIST/VERSION; rm -f $PKG_DIST/VERSION) PKG_ARCH=$platform_arch PKG_NAME=utils-curl PKG_BASE=$PKG_DIST \
+RUN PKG_VERSION=$(cat $PKG_DIST/VERSION; rm -f $PKG_DIST/VERSION) PKG_ARCH=$ARCH PKG_NAME=utils-curl PKG_BASE=$PKG_DIST \
     bash /build/package_deb.sh
 
 FROM scratch AS pkg

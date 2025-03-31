@@ -17,13 +17,13 @@ target "pkg" {
   networks = ["host"]
 }
 
-target "pkg-armv6" {
+target "pkg-armhf" {
   inherits = ["pkg"]
   platforms = [
-    "linux/arm/v6"
+    "linux/armhf"
   ]
   args = {
-    ARCH = "linux/arm/v6"
+    ARCH = "linux/armhf"
   }
 }
 

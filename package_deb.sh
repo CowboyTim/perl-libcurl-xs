@@ -11,7 +11,7 @@ if [ "$PKG_ARCH" = "linux/amd64" ]; then
     PKG_ARCH=amd64
 elif [ "$PKG_ARCH" = "linux/arm64" ]; then
     PKG_ARCH=arm64
-elif [ "$PKG_ARCH" = "linux/arm/v6" ]; then
+elif [ "$PKG_ARCH" = "linux/armhf" ]; then
     PKG_ARCH=armhf
 fi
 
