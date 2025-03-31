@@ -47,5 +47,5 @@ cat >$dpkg_dir/DEBIAN/conffiles <<EOcfgf
 EOcfgf
 
 dpkg-deb --build $dpkg_dir/
-echo "file $(pwd)/$PKG_NAME-$PKG_VERSION.deb"
-mv $tmp_dpkg_dir/$PKG_NAME-$PKG_VERSION.deb .
+echo "file $(pwd)/$PKG_NAME-${PKG_VERSION}.deb"
+mv $tmp_dpkg_dir/*.deb "$PKG_NAME-${PKG_VERSION}_${PKG_ARCH}.deb"

@@ -1,31 +1,9 @@
 ARG ARCH
 FROM --platform=${ARCH} debian:bookworm-slim AS builder-base
-ADD https://downloads.raspberrypi.com/raspios_lite_armhf/images/raspios_lite_armhf-2024-11-19/2024-11-19-raspios-bookworm-armhf-lite.img.xz /tmp/
-RUN apt update && apt install -y xz-utils file p7zip
-WORKDIR /
-ARG ARCH
-ENV platform_arch=${ARCH}
-RUN \[ "${platform_arch}" == "linux/arm/v6" \] \
-    && mkdir -p /stage \
-    && cd /stage \
-    && xz -d /tmp/2024-11-19-raspios-bookworm-armhf-lite.img.xz \
-    && 7z x /tmp/*.img \
-    && pwd \
-    && ls -l \
-    && 7z x -snld 1.img \
-    && rm -f 1.img 0.fat \
-    && rm -rf tmp \
-    && mkdir -p tmp \
-    && chmod 1777 tmp \
-    || exit 0
-RUN \[ "${platform_arch}" != "linux/arm/v6" \] && ln -s / /stage || exit 0
 
 FROM scratch AS builder
-COPY --from=builder-base /stage /
-RUN echo "GMT" > /etc/timezone
-RUN ln -sfT /usr/share/zoneinfo/right/GMT /etc/localtime
-ENV TERM=
-RUN apt install -y dpkg gawk dialog
+COPY --from=builder-base / /
+RUN apt update && apt install -y dpkg gawk dialog
 
 FROM builder AS deb-pkg-build
 RUN apt install -y zlib1g-dev libssl-dev libsocket6-perl perl make gcc ca-certificates
