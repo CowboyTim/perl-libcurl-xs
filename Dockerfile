@@ -2,8 +2,9 @@ ARG ARCH
 FROM --platform=${ARCH} debian:bookworm-slim AS builder-base
 COPY rpi_zero_w_bookworm.tar.gz /rpi_zero_w_bookworm.tar.gz 
 WORKDIR /
+ARG ARCH
 RUN if [ "${ARCH}" = "linux/armhf" ]; then \
-        mkdir -p /stage; \
+        mkdir -p /stage && cd /stage; \
         tar xzf /rpi_zero_w_bookworm.tar.gz; \
         rm /rpi_zero_w_bookworm.tar.gz; \
         echo "GMT" > /stage/etc/timezone; \
@@ -18,6 +19,7 @@ RUN apt update
 FROM --platform=${ARCH} scratch AS builder
 ENV TERM=
 COPY --from=builder-base /stage /
+RUN cat /etc/os-release
 
 FROM --platform=${ARCH} builder AS deb-pkg-build
 RUN apt install -y dpkg gawk dialog
