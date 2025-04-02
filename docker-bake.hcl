@@ -1,8 +1,8 @@
 group "default" {
-  targets = ["pkg"]
+  targets = ["pkg-armhf"]
 }
 group "release" {
-  targets = ["pkg"]
+  targets = ["pkg-armhf"]
 }
 target "pkg" {
   pull = true
@@ -35,15 +35,4 @@ target "pkg-amd64" {
   args = {
     ARCH = "linux/amd64"
   }
-}
-
-targt "pkg-all" {
-  inherits = ["pkg-cross"]
-  name = "pkg"
-  matrix = {
-    env = ["release", "debug"]
-  }
-  outputs = [
-    "type=local,dest=dist"
-  ]
 }
